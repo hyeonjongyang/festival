@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  BOOTH_MANAGER
+  ADMIN
+}
+
+enum AccountBatchKind {
+  STUDENT
+  BOOTH
+  ADMIN
+}
+
+enum PointViolationType {
+  DUPLICATE_AWARD
+}
+
+model User {
+  id             String           @id @default(cuid())
+  role           UserRole
+  grade          Int?
+  classNumber    Int?
+  studentNumber  Int?
+  code           String           @unique
+  nickname       String
+  nicknameLocked Boolean          @default(false)
+  points         Int              @default(0)
+  qrToken        String           @unique @default(uuid())
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  booth          Booth?
+  posts          Post[]
+  hearts         Heart[]
+  pointLogs      PointLog[]       @relation("StudentPointLogs")
+  createdBatches AccountBatch[]   @relation("CreatedBatches")
+  pointViolations PointViolation[] @relation("StudentPointViolations")
+}
+
+model Booth {
+  id          String    @id @default(cuid())
+  name        String
+  ownerId     String    @unique
+  location    String?
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  owner       User      @relation(fields: [ownerId], references: [id])
+  pointLogs   PointLog[]
+  posts       Post[]
+  pointViolations PointViolation[]
+}
+
+model PointLog {
+  id         String   @id @default(cuid())
+  boothId    String
+  studentId  String
+  points     Int      @default(30)
+  awardedAt  DateTime @default(now())
+
+  booth      Booth    @relation(fields: [boothId], references: [id])
+  student    User     @relation("StudentPointLogs", fields: [studentId], references: [id])
+
+  @@index([studentId, awardedAt])
+  @@index([boothId, awardedAt])
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  authorId  String
+  boothId   String?
+  body      String
+  imagePath String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author    User     @relation(fields: [authorId], references: [id])
+  booth     Booth?   @relation(fields: [boothId], references: [id])
+  hearts    Heart[]
+}
+
+model Heart {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId])
+}
+
+model AccountBatch {
+  id        String            @id @default(cuid())
+  createdBy String
+  kind      AccountBatchKind
+  payload   Json
+  xlsxPath  String?
+  createdAt DateTime          @default(now())
+
+  creator   User              @relation("CreatedBatches", fields: [createdBy], references: [id])
+}
+
+model PointViolation {
+  id            String             @id @default(cuid())
+  boothId       String
+  studentId     String
+  type          PointViolationType
+  detectedAt    DateTime           @default(now())
+  lastAwardedAt DateTime
+  availableAt   DateTime
+
+  booth         Booth              @relation(fields: [boothId], references: [id])
+  student       User               @relation("StudentPointViolations", fields: [studentId], references: [id])
+
+  @@index([detectedAt])
+  @@index([boothId, detectedAt])
+  @@index([studentId, detectedAt])
+}

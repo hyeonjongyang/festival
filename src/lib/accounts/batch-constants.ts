@@ -1,0 +1,7 @@
+export const STUDENT_BATCH_SIZE_LIMIT = 2500;
+export const MAX_BOOTH_BATCH_COUNT = 10;
+export const MAX_ADMIN_BATCH_COUNT = 10;
+
+export const STUDENT_BATCH_LIMIT_MESSAGE = `최대 ${STUDENT_BATCH_SIZE_LIMIT.toLocaleString()}명까지 한 번에 생성할 수 있습니다.`;
+export const BOOTH_BATCH_LIMIT = MAX_BOOTH_BATCH_COUNT;
+export const ADMIN_BATCH_LIMIT = MAX_ADMIN_BATCH_COUNT;

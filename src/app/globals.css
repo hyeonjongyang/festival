@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  --theme-background: #000000;
+  --theme-surface: #000000;
+  --theme-surface-alt: #000000;
+  --theme-border: #1a1a1a;
+  --theme-muted: #8a8a8a;
+  --theme-foreground: #f5f5f5;
+  --theme-foreground-soft: #c7c7c7;
+  --theme-primary: #1d74fc;
+  --theme-primary-strong: #0f5ad7;
+  --theme-primary-soft: rgba(29, 116, 252, 0.14);
+  --theme-ring: rgba(29, 116, 252, 0.48);
+  --theme-shadow-soft: 0 24px 48px rgba(0, 0, 0, 0.6);
+}
+
+@theme inline {
+  --color-background: var(--theme-background);
+  --color-foreground: var(--theme-foreground);
+  --color-surface: var(--theme-surface);
+  --color-surface-alt: var(--theme-surface-alt);
+  --color-border: var(--theme-border);
+  --color-muted: var(--theme-muted);
+  --color-primary: var(--theme-primary);
+  --color-primary-strong: var(--theme-primary-strong);
+  --color-primary-soft: var(--theme-primary-soft);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background-color: var(--theme-background);
+  color: var(--theme-foreground);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+.skip-nav {
+  position: absolute;
+  left: 1rem;
+  top: -100%;
+  z-index: 50;
+  padding: 0.75rem 1.25rem;
+  border-radius: 9999px;
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  color: var(--theme-foreground);
+  font-weight: 600;
+  transition: top 150ms ease;
+}
+
+.skip-nav:focus-visible {
+  top: 1rem;
+}
+
+.glass-panel {
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  border-radius: 1.25rem;
+  box-shadow: var(--theme-shadow-soft);
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--theme-ring);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--theme-primary-soft);
+  color: var(--theme-primary-strong);
+}
+
+@layer utilities {
+  .bg-background {
+    background-color: var(--theme-background);
+  }
+
+  .bg-surface {
+    background-color: var(--theme-surface);
+  }
+
+  .bg-surface-alt {
+    background-color: var(--theme-surface-alt);
+  }
+
+  .text-foreground {
+    color: var(--theme-foreground);
+  }
+
+  .text-muted {
+    color: var(--theme-muted);
+  }
+
+  .text-soft {
+    color: var(--theme-foreground-soft);
+  }
+
+  .text-primary {
+    color: var(--theme-primary);
+  }
+
+  .bg-primary {
+    background-color: var(--theme-primary);
+    color: var(--theme-foreground);
+  }
+
+  .border-border {
+    border-color: var(--theme-border);
+  }
+
+  .ring-primary {
+    --tw-ring-color: var(--theme-ring);
+  }
+}

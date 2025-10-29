@@ -1,0 +1,44 @@
+{
+  "name": "festival-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "cross-env WATCHPACK_POLLING=true next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "vitest",
+    "test:unit": "vitest run",
+    "test:integration": "vitest run src/app/api/**/*.test.ts",
+    "test:prisma": "vitest run src/lib/prisma-schema.test.ts",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:prisma",
+    "audit:lighthouse": "mkdir -p docs/lighthouse && lighthouse http://localhost:3000 --only-categories=accessibility,best-practices,performance --output=html --output-path=./docs/lighthouse/mobile-report.html --quiet",
+    "prepare:deploy": "npm run lint && npm run test:all && npm run build",
+    "deploy:vercel": "npm run prepare:deploy && npx --yes vercel deploy --prebuilt"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.18.0",
+    "@zxing/browser": "^0.1.5",
+    "exceljs": "^4.4.0",
+    "next": "16.0.0",
+    "prisma": "^6.18.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-qr-code": "^2.0.18",
+    "swr": "^2.3.6",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "cross-env": "^10.1.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.0",
+    "lighthouse": "^12.8.2",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^4.0.3"
+  }
+}
