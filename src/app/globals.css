@@ -16,6 +16,24 @@
   --theme-shadow-soft: 0 24px 48px rgba(0, 0, 0, 0.6);
 }
 
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --theme-background: #f8fafc;
+    --theme-surface: #ffffff;
+    --theme-surface-alt: #f1f5f9;
+    --theme-border: #d6dde8;
+    --theme-muted: #64748b;
+    --theme-foreground: #0f172a;
+    --theme-foreground-soft: #475569;
+    --theme-primary: #1d74fc;
+    --theme-primary-strong: #0f5ad7;
+    --theme-primary-soft: rgba(29, 116, 252, 0.18);
+    --theme-ring: rgba(29, 116, 252, 0.32);
+    --theme-shadow-soft: 0 24px 48px rgba(15, 23, 42, 0.12);
+  }
+}
+
 @theme inline {
   --color-background: var(--theme-background);
   --color-foreground: var(--theme-foreground);
