@@ -6,11 +6,11 @@ describe("STUDENT_WORKSHEET_COLUMNS", () => {
     const headers = STUDENT_WORKSHEET_COLUMNS.map((column) => column.header);
     const keys = STUDENT_WORKSHEET_COLUMNS.map((column) => column.key);
 
-    ["학년", "반", "번호", "로그인 코드", "닉네임", "QR 토큰"].forEach((header) => {
+    ["학년", "반", "번호", "로그인 코드", "학번"].forEach((header) => {
       expect(headers).toContain(header);
     });
 
-    ["grade", "classNumber", "studentNumber", "code", "nickname", "qrToken"].forEach((key) => {
+    ["grade", "classNumber", "studentNumber", "code", "studentId"].forEach((key) => {
       expect(keys).toContain(key as typeof STUDENT_WORKSHEET_COLUMNS[number]["key"]);
     });
   });

@@ -5,25 +5,28 @@ describe("mapFeedRecord", () => {
   it("transforms prisma record into feed item", () => {
     const createdAt = new Date("2024-05-02T09:00:00.000Z");
 
-    const item = mapFeedRecord({
-      id: "post_1",
-      body: "축제 사진 자랑",
-      imagePath: "uploads/posts/post_1/image.jpg",
-      createdAt,
-      booth: {
+    const item = mapFeedRecord(
+      {
+        id: "post_1",
+        body: "축제 사진 자랑",
+        imagePath: "uploads/posts/post_1/image.jpg",
+        createdAt,
+        booth: {
         id: "booth_1",
         name: " 은하 카페 ",
         location: "본관 1층",
       },
       author: {
         id: "user_1",
+        role: "STUDENT",
         nickname: "은하토끼",
+        grade: 1,
+        classNumber: 2,
+        studentNumber: 7,
       },
-      _count: {
-        hearts: 5,
       },
-      hearts: [{ id: "heart_1" }],
-    });
+      new Map([["booth_1", { average: 4.8666, count: 12 }]]),
+    );
 
     expect(item).toEqual({
       id: "post_1",
@@ -33,9 +36,9 @@ describe("mapFeedRecord", () => {
       authorId: "user_1",
       boothName: "은하 카페",
       boothLocation: "본관 1층",
-      authorNickname: "은하토끼",
-      heartCount: 5,
-      viewerHasHeart: true,
+      authorName: "10207",
+      boothRatingAverage: 4.9,
+      boothRatingCount: 12,
     });
   });
 
@@ -50,12 +53,12 @@ describe("mapFeedRecord", () => {
       booth: null,
       author: {
         id: "user_2",
+        role: "BOOTH_MANAGER",
         nickname: "별빛여우",
+        grade: null,
+        classNumber: null,
+        studentNumber: null,
       },
-      _count: {
-        hearts: 0,
-      },
-      hearts: [],
     });
 
     expect(item).toEqual({
@@ -66,9 +69,9 @@ describe("mapFeedRecord", () => {
       authorId: "user_2",
       boothName: "이름 없는 부스",
       boothLocation: null,
-      authorNickname: "별빛여우",
-      heartCount: 0,
-      viewerHasHeart: false,
+      authorName: "별빛여우",
+      boothRatingAverage: null,
+      boothRatingCount: 0,
     });
   });
 });

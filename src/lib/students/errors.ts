@@ -4,10 +4,3 @@ export class StudentAccessError extends Error {
     this.name = "StudentAccessError";
   }
 }
-
-export class NicknameLockedError extends Error {
-  constructor(message = "닉네임을 더 이상 변경할 수 없습니다.") {
-    super(message);
-    this.name = "NicknameLockedError";
-  }
-}

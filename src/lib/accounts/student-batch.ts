@@ -4,8 +4,8 @@ import ExcelJS from "exceljs";
 import { AccountBatchKind } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { createUniqueCodeFactory } from "@/lib/accounts/code-factory";
-import { createUniqueNicknameFactory } from "@/lib/accounts/nickname-factory";
 import { STUDENT_BATCH_SIZE_LIMIT } from "@/lib/accounts/batch-constants";
+import { formatStudentId } from "@/lib/students/student-id";
 import type {
   StudentAccountPreview,
   StudentBatchParams,
@@ -22,16 +22,14 @@ type PlannedStudent = {
   classNumber: number;
   studentNumber: number;
   code: string;
-  nickname: string;
+  studentId: string;
 };
 
-type PersistedStudentRow = PlannedStudent & {
-  qrToken: string;
-};
+type PersistedStudentRow = PlannedStudent;
 
 export type StudentWorksheetRow = Pick<
   PersistedStudentRow,
-  "grade" | "classNumber" | "studentNumber" | "code" | "nickname" | "qrToken"
+  "grade" | "classNumber" | "studentNumber" | "code" | "studentId"
 >;
 
 export type StudentWorksheetColumn = {
@@ -45,8 +43,7 @@ export const STUDENT_WORKSHEET_COLUMNS: StudentWorksheetColumn[] = [
   { header: "반", key: "classNumber", width: 8 },
   { header: "번호", key: "studentNumber", width: 8 },
   { header: "로그인 코드", key: "code", width: 15 },
-  { header: "닉네임", key: "nickname", width: 26 },
-  { header: "QR 토큰", key: "qrToken", width: 38 },
+  { header: "학번", key: "studentId", width: 14 },
 ];
 
 export async function createStudentAccountsBatch(
@@ -83,18 +80,28 @@ export async function createStudentAccountsBatch(
   }
 
   const generateUniqueCode = await createUniqueCodeFactory();
-  const generateUniqueNickname = createUniqueNicknameFactory();
   const plannedStudents: PlannedStudent[] = [];
 
   for (let grade = gradeFrom; grade <= gradeTo; grade++) {
     for (let classNumber = 1; classNumber <= classCount; classNumber++) {
       for (let offset = 0; offset < studentsPerClass; offset++) {
+        const studentNumber = startNumber + offset;
+        const studentId = formatStudentId({
+          grade,
+          classNumber,
+          studentNumber,
+        });
+
+        if (!studentId) {
+          throw new Error("학번을 계산하지 못했습니다. 학년/반/번호를 확인해주세요.");
+        }
+
         plannedStudents.push({
           grade,
           classNumber,
-          studentNumber: startNumber + offset,
+          studentNumber,
           code: generateUniqueCode(),
-          nickname: generateUniqueNickname(),
+          studentId,
         });
       }
     }
@@ -111,7 +118,7 @@ export async function createStudentAccountsBatch(
         classNumber: student.classNumber,
         studentNumber: student.studentNumber,
         code: student.code,
-        nickname: student.nickname,
+        nickname: student.studentId,
       })),
     });
 
@@ -122,8 +129,6 @@ export async function createStudentAccountsBatch(
         classNumber: true,
         studentNumber: true,
         code: true,
-        nickname: true,
-        qrToken: true,
       },
       orderBy: [
         { grade: "asc" },
@@ -184,7 +189,7 @@ function createPreview(students: PlannedStudent[]): StudentAccountPreview[] {
     classNumber: student.classNumber,
     studentNumber: student.studentNumber,
     code: student.code,
-    nickname: student.nickname,
+    studentId: student.studentId,
   }));
 }
 
@@ -193,8 +198,6 @@ function normalizeStudentRows(rows: Array<{
   classNumber: number | null;
   studentNumber: number | null;
   code: string;
-  nickname: string;
-  qrToken: string;
 }>): PersistedStudentRow[] {
   return rows.map((row) => {
     if (
@@ -205,13 +208,18 @@ function normalizeStudentRows(rows: Array<{
       throw new Error("생성된 학생 데이터에 필수 값이 누락되었습니다.");
     }
 
+    const studentId = formatStudentId(row);
+
+    if (!studentId) {
+      throw new Error("학번을 계산하지 못했습니다.");
+    }
+
     return {
       grade: row.grade,
       classNumber: row.classNumber,
       studentNumber: row.studentNumber,
       code: row.code,
-      nickname: row.nickname,
-      qrToken: row.qrToken,
+      studentId,
     };
   });
 }
@@ -244,8 +252,7 @@ async function writeStudentWorkbook(
         classNumber: student.classNumber,
         studentNumber: student.studentNumber,
         code: student.code,
-        nickname: student.nickname,
-        qrToken: student.qrToken,
+        studentId: student.studentId,
       });
     });
 

@@ -11,7 +11,7 @@ export type StudentAccountPreview = {
   classNumber: number;
   studentNumber: number;
   code: string;
-  nickname: string;
+  studentId: string;
 };
 
 export type StudentBatchResult = {

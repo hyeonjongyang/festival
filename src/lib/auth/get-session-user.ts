@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { formatStudentId } from "@/lib/students/student-id";
 import {
   SESSION_COOKIE_NAME,
   verifySessionToken,
@@ -25,16 +26,22 @@ export async function getSessionUser() {
       id: true,
       role: true,
       nickname: true,
-      nicknameLocked: true,
       grade: true,
       classNumber: true,
       studentNumber: true,
-      points: true,
+      visitCount: true,
       code: true,
     },
   });
 
-  return user;
+  if (!user) {
+    return null;
+  }
+
+  return {
+    ...user,
+    studentId: formatStudentId(user),
+  };
 }
 
 export type SessionUser = Awaited<ReturnType<typeof getSessionUser>>;

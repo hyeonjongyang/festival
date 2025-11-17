@@ -1,6 +1,6 @@
 # Festival Connect
 
-모바일 전용 학교 축제 운영 허브입니다. 학생 · 부스 관리자 · 전체 관리자가 한 곳에서 QR 포인트, 피드, 리더보드, 대량 계정 생성을 처리할 수 있도록 Next.js App Router 기반으로 구축합니다.
+모바일 전용 학교 축제 운영 허브입니다. 학생 · 부스 관리자 · 전체 관리자가 한 곳에서 QR 방문 기록, 피드, 리더보드, 대량 계정 생성을 처리할 수 있도록 Next.js App Router 기반으로 구축합니다.
 
 ## Tech Stack
 
@@ -42,7 +42,7 @@
 
 1. 최초 한 번 `npx prisma migrate dev --name init`으로 스키마를 동기화합니다.
 2. Prisma Client는 `src/lib/prisma.ts`에서 싱글턴으로 노출되며 서버 컴포넌트/Route Handler에서 재사용합니다.
-3. 데이터 모델은 `User`, `Booth`, `PointLog`, `Post`, `Heart`, `AccountBatch`를 포함하며 `UserRole`, `AccountBatchKind` enum으로 역할을 구분합니다.
+3. 데이터 모델은 `User`, `Booth`, `BoothVisit`, `VisitViolation`, `Post`, `AccountBatch`를 포함하며 `UserRole`, `AccountBatchKind` enum으로 역할을 구분합니다.
 4. SQLite 파일(`prisma/dev.db`)은 로컬 개발 용도로만 사용하며 Git에서 자동으로 무시됩니다.
 
 ## Authentication Primer
@@ -67,28 +67,27 @@
 | 반            | `classNumber` 열. 학년별 생성 반 수를 반영합니다. |
 | 번호          | `studentNumber` 열. 시작 번호부터 1씩 증가합니다. |
 | 로그인 코드   | `code` 열. 5자리 로그인 코드(중복 불가)를 제공합니다. |
-| 닉네임        | `nickname` 열. 닉네임 팩토리에서 생성된 초기 값입니다. |
-| QR 토큰       | `qrToken` 열. 학생 QR 코드에 인코딩되는 UUID입니다. |
+| 학번          | `studentId` 열. 학년/반/번호를 조합한 5자리 학번입니다. |
 
 Excel은 UTF-8로 저장되며, 생성 시각/생성자는 `AccountBatch` 모델 payload에서 확인할 수 있습니다.
 
-## Feed Uploads & Hearts
+## Feed Uploads
 
 - 부스 관리자는 `/booth/feed/new`에서 본문과 단일 이미지를 함께 업로드할 수 있으며, 서버는 `/api/posts` Route Handler가 FormData를 검증한 뒤 `public/uploads/posts/{postId}/image.(jpg|png|webp)`에 파일을 저장합니다.
-- 학생과 관람객은 `/feed`에서 무한 스크롤 피드를 확인합니다. 데이터는 `fetchFeedPage`(Prisma + 페이지네이션)으로 공급되고, 옵티미스틱 하트 토글 UI가 `/api/posts/{postId}/heart`를 호출해 총 하트 수를 동기화합니다.
+- 학생과 관람객은 `/feed`에서 무한 스크롤 피드를 확인합니다. 데이터는 `fetchFeedPage`(Prisma + 페이지네이션)으로 공급되고, 방문 스캐너와 관리용 삭제 버튼만 노출됩니다.
 - 이미지 정리는 하루 단위 CRON(Job) TODO로 남겨 두었으며, README와 UI에 동일한 정책을 명시해 운영자가 주기적으로 `public/uploads/posts`를 확인할 수 있도록 했습니다.
 
-## QR Workflow
+## Visit Workflow
 
-1. 학생은 `/student` 마이페이지에서 현재 QR 토큰과 텍스트 토큰을 확인하고 필요 시 새로고침할 수 있습니다.
-2. 부스 관리자는 `/booth/points` 페이지를 열어 브라우저 카메라(또는 수동 입력)로 QR 토큰을 스캔하고, `/api/points/award`로 포인트 지급 요청을 보냅니다.
-3. 지급 성공 시 부스 대시보드와 학생 최근 적립 로그가 즉시 갱신되며, 30분 쿨타임을 위반하면 `PointViolation` 히스토리로 전환됩니다.
-4. 현장에서 스캔이 어려운 경우, 학생이 노출하는 텍스트 토큰을 직접 입력해도 동일한 제한 정책이 적용됩니다.
+1. 부스 관리자는 `/booth/visits` 페이지에서 고정된 부스 QR 코드와 토큰을 확인·출력하고, 실시간 방문 현황을 모니터링합니다.
+2. 학생은 `/feed` 화면의 방문 스캔 버튼을 눌러 부스 QR을 촬영하면 `/api/visits/record`가 동일 부스 중복 방문 여부를 검사해, 각 부스를 한 번만 기록하도록 보장합니다.
+3. 기록이 성공하면 학생 마이페이지와 관리자/부스 대시보드가 즉시 갱신되고, 제한을 위반한 시도는 `VisitViolation` 히스토리로 남아 운영 경고 패널에서 확인할 수 있습니다.
+4. 현장에서 스캔이 어려운 경우, 부스가 노출하는 토큰 문자열을 이용해 학생이 직접 스캔하도록 안내하거나 별도 보조 입력 방안을 마련할 수 있습니다.
 
 ## Leaderboard & Filters
 
-- `/leaderboard` 페이지는 Prisma `fetchLeaderboard`가 계산한 Dense rank 데이터를 바탕으로 학년별 필터와 자동 새로고침(15초 SWR interval)을 제공하며, 학생 본인의 순위를 강조 표시합니다.
-- `/api/leaderboard?grade=all|1|2|3`는 정렬·필터링된 데이터를 반환하고, 클라이언트는 `mutate` 버튼/자동 갱신으로 포인트 지급 직후 상태를 다시 불러옵니다.
+- `/leaderboard` 페이지는 Prisma `fetchBoothLeaderboard` 결과를 기반으로 부스 방문 순위를 보여주며, 15초 간격으로 자동 새로고침합니다.
+- `/api/leaderboard/booths`는 최신 부스 방문 순위를 JSON 형태로 반환하고, 클라이언트는 `mutate` 버튼/자동 갱신으로 방문 기록 직후 상태를 다시 불러옵니다.
 - 빈 상태, 오류 배너, 총 학생 수 집계가 포함된 모바일 카드 UI로 현장 운영진이 순위를 즉시 공유할 수 있습니다.
 
 ### Available Scripts
@@ -100,7 +99,7 @@ Excel은 UTF-8로 저장되며, 생성 시각/생성자는 `AccountBatch` 모델
 | `npm run start`          | 빌드 산출물 실행                                                    |
 | `npm run lint`           | ESLint 검사                                                         |
 | `npm run test`           | Vitest 기본 모드(Watcher)                                           |
-| `npm run test:unit`      | Vitest를 `run` 모드로 실행해 순수 유틸/도메인 로직을 검증            |
+| `npm run test:unit`      | Vitest를 `run` 모드로 실행해 학번/코드 생성기 등 순수 유틸/도메인 로직을 검증 |
 | `npm run test:integration` | Next API Route 통합 테스트 실행                                      |
 | `npm run test:prisma`    | Prisma DMMF 기반 스키마 무결성 검사                                 |
 | `npm run test:all`       | 위 세 가지 테스트를 순차 실행                                        |
@@ -127,7 +126,7 @@ festival-app/
 
 - `@/*` alias가 `src/*`를 가리키도록 `tsconfig.json`에 설정되어 있습니다. 서버/클라이언트 코드 모두 동일한 경로로 import 합니다.
 - Tailwind CSS v4는 `globals.css` 내에서 `@import "tailwindcss";`와 `@theme inline`으로 동작합니다. 전역 토큰(`--background`, `--accent`, `glass-panel` 유틸)도 여기에서 정의합니다.
-- `npm run test:unit`은 닉네임/코드 팩토리, 포인트 로직 등 도메인 유닛 테스트를 실행하고, `npm run test:integration`은 대표 API Route 핸들러, `npm run test:prisma`는 Prisma 스키마 제약 조건을 검증합니다.
+- `npm run test:unit`은 닉네임/코드 팩토리, 방문 로직 등 도메인 유닛 테스트를 실행하고, `npm run test:integration`은 대표 API Route 핸들러, `npm run test:prisma`는 Prisma 스키마 제약 조건을 검증합니다.
 
 ## Accessibility & Lighthouse
 

@@ -1,91 +1,93 @@
 "use client";
 
-import { useState } from "react";
-import { useLoginMutation } from "@/lib/auth/use-login-mutation";
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "@/components/session-context";
 
-const CODE_LENGTH = 5;
-const CODE_PATTERN = /^[A-Z0-9]{5}$/;
+const CODE_REGEX = /^[A-Z0-9]{5}$/;
 
 export function LoginForm() {
+  const router = useRouter();
+  const { setSession } = useSession();
   const [code, setCode] = useState("");
-  const [inputError, setInputError] = useState<string | null>(null);
-  const { login, error, isPending, reset } = useLoginMutation();
+  const [invalid, setInvalid] = useState(false);
+  const [pending, setPending] = useState(false);
 
-  const handleChange = (value: string) => {
-    const sanitized = value
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, "")
-      .slice(0, CODE_LENGTH);
-    setCode(sanitized);
-
-    if (inputError) {
-      setInputError(null);
-    }
-
-    if (error) {
-      reset();
-    }
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!CODE_PATTERN.test(code)) {
-      setInputError("5자리 영문 대문자/숫자 코드를 입력해주세요.");
+    const normalized = code.toUpperCase();
+
+    if (!CODE_REGEX.test(normalized)) {
+      setInvalid(true);
       return;
     }
 
-    await login(code);
+    setPending(true);
+    setInvalid(false);
+
+    try {
+      const response = await fetch("/api/auth/code-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: normalized }),
+      });
+
+      const json = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(json.message ?? "로그인에 실패했습니다.");
+      }
+
+      if (json.user) {
+        setSession(json.user);
+      }
+
+      router.push("/feed");
+    } catch (loginError) {
+      console.error(loginError);
+      setInvalid(true);
+    } finally {
+      setPending(false);
+    }
   };
 
-  const displayError = inputError ?? error;
-
   return (
-    <form className="space-y-6" onSubmit={handleSubmit} noValidate>
-      <div className="space-y-2">
-        <label
-          htmlFor="login-code"
-          className="text-sm font-medium text-soft"
-        >
-          로그인 코드
-        </label>
-        <input
-          id="login-code"
-          name="code"
-          type="text"
-          inputMode="text"
-          autoCapitalize="characters"
-          autoComplete="one-time-code"
-          autoFocus
-          maxLength={CODE_LENGTH}
-          value={code}
-          onChange={(event) => handleChange(event.target.value)}
-          aria-invalid={displayError ? "true" : "false"}
-          aria-describedby={displayError ? "login-code-error" : undefined}
-          className="w-full rounded-xl border border-border bg-surface-alt px-4 py-3 text-lg font-medium tracking-[0.4em] text-center text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60"
-          placeholder="A1B2C"
-          disabled={isPending}
-        />
+    <div className="flex min-h-screen items-center justify-center px-6">
+      <div className="w-full max-w-sm space-y-6 text-center">
+        <h1 className="text-2xl font-semibold uppercase tracking-[0.18em] text-[var(--text-primary)] sm:text-3xl">
+          종촌고등학교 민마루제
+        </h1>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            id="login-code"
+            name="code"
+            inputMode="text"
+            autoComplete="one-time-code"
+            aria-label="로그인 코드"
+            aria-invalid={invalid || undefined}
+            value={code}
+            onChange={(event) => {
+              setCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5));
+              setInvalid(false);
+            }}
+            maxLength={5}
+            pattern="[A-Z0-9]{5}"
+            className={`w-full rounded-2xl border bg-[var(--surface-muted)] px-4 py-3 text-center text-2xl font-semibold tracking-[0.3em] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none ${
+              invalid ? "border-[var(--danger)] focus:border-[var(--danger)]" : "border-[var(--outline)] focus:border-[var(--accent)]"
+            }`}
+            placeholder="ABCDE"
+          />
+
+          <button
+            type="submit"
+            disabled={pending}
+            className="w-full rounded-2xl bg-[var(--accent)] px-4 py-3 text-center text-base font-semibold text-white transition-colors hover:bg-[var(--accent-strong)] disabled:opacity-60"
+          >
+            {pending ? "확인 중…" : "로그인"}
+          </button>
+        </form>
       </div>
-
-      {displayError ? (
-        <p
-          id="login-code-error"
-          role="alert"
-          aria-live="assertive"
-          className="text-sm font-medium text-primary"
-        >
-          {displayError}
-        </p>
-      ) : null}
-
-      <button
-        type="submit"
-        className="inline-flex w-full items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-semibold transition hover:brightness-110 focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-60"
-        disabled={isPending}
-      >
-        {isPending ? "로그인 중..." : "입장하기"}
-      </button>
-    </form>
+    </div>
   );
 }

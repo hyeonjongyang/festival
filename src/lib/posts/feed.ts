@@ -1,9 +1,11 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { getUserDisplayName } from "@/lib/users/display-name";
 import {
   FEED_PAGE_DEFAULT_SIZE,
   FEED_PAGE_MAX_SIZE,
 } from "@/lib/config/constants";
+import { fetchBoothRatingStats } from "@/lib/ratings";
 
 const baseFeedInclude = {
   booth: {
@@ -16,12 +18,11 @@ const baseFeedInclude = {
   author: {
     select: {
       id: true,
+      role: true,
       nickname: true,
-    },
-  },
-  _count: {
-    select: {
-      hearts: true,
+      grade: true,
+      classNumber: true,
+      studentNumber: true,
     },
   },
 } satisfies Prisma.PostInclude;
@@ -34,9 +35,9 @@ export type PostFeedItem = {
   authorId: string;
   boothName: string;
   boothLocation: string | null;
-  authorNickname: string;
-  heartCount: number;
-  viewerHasHeart: boolean;
+  authorName: string;
+  boothRatingAverage: number | null;
+  boothRatingCount: number;
 };
 
 export type FeedPage = {
@@ -45,39 +46,16 @@ export type FeedPage = {
 };
 
 export type FeedPageParams = {
-  viewerId?: string | null;
   limit?: number;
   cursor?: string | null;
 };
 
 type FeedPostRecord = Prisma.PostGetPayload<{
-  include: typeof baseFeedInclude & {
-    hearts?: {
-      select: {
-        id: true;
-      };
-      where: {
-        userId: string;
-      };
-    };
-  };
+  include: typeof baseFeedInclude;
 }>;
 
 export async function fetchFeedPage(params: FeedPageParams = {}): Promise<FeedPage> {
   const limit = clampPageSize(params.limit);
-  const include: Prisma.PostInclude = { ...baseFeedInclude };
-
-  if (params.viewerId) {
-    include.hearts = {
-      select: {
-        id: true,
-      },
-      where: {
-        userId: params.viewerId,
-      },
-    };
-  }
-
   const posts = (await prisma.post.findMany({
     orderBy: [
       { createdAt: "desc" },
@@ -90,21 +68,35 @@ export async function fetchFeedPage(params: FeedPageParams = {}): Promise<FeedPa
           skip: 1,
         }
       : {}),
-    include,
+    include: baseFeedInclude,
   })) as FeedPostRecord[];
 
   const hasMore = posts.length > limit;
   const visible = hasMore ? posts.slice(0, limit) : posts;
+  const boothIds = Array.from(
+    new Set(
+      visible
+        .map((record) => record.booth?.id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  );
+  const boothRatings = await fetchBoothRatingStats(boothIds);
 
   return {
-    items: visible.map((record) => mapFeedRecord(record)),
+    items: visible.map((record) => mapFeedRecord(record, boothRatings)),
     nextCursor: hasMore
       ? visible[visible.length - 1]?.id ?? null
       : null,
   };
 }
 
-export function mapFeedRecord(record: FeedPostRecord): PostFeedItem {
+export function mapFeedRecord(
+  record: FeedPostRecord,
+  ratingStats?: Map<string, { average: number; count: number }>,
+): PostFeedItem {
+  const boothId = record.booth?.id ?? null;
+  const stats = boothId ? ratingStats?.get(boothId) : undefined;
+
   return {
     id: record.id,
     body: record.body,
@@ -113,9 +105,9 @@ export function mapFeedRecord(record: FeedPostRecord): PostFeedItem {
     authorId: record.author.id,
     boothName: formatBoothName(record.booth?.name),
     boothLocation: record.booth?.location ?? null,
-    authorNickname: record.author.nickname,
-    heartCount: record._count?.hearts ?? 0,
-    viewerHasHeart: Boolean(record.hearts?.length),
+    authorName: getUserDisplayName(record.author),
+    boothRatingAverage: stats ? Number(stats.average.toFixed(1)) : null,
+    boothRatingCount: stats?.count ?? 0,
   };
 }
 

@@ -12,7 +12,6 @@ import { fetchFeedPage } from "@/lib/posts/feed";
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export async function GET(request: Request) {
-  const session = await getSessionUser();
   const { searchParams } = new URL(request.url);
   const cursor = searchParams.get("cursor");
   const limitParam = searchParams.get("limit");
@@ -23,7 +22,6 @@ export async function GET(request: Request) {
     const feed = await fetchFeedPage({
       cursor: cursor ?? undefined,
       limit,
-      viewerId: session?.id,
     });
 
     return NextResponse.json({ feed });
@@ -99,14 +97,21 @@ export async function POST(request: Request) {
   const imageEntry = formData.get("image");
   const file = imageEntry instanceof File ? imageEntry : null;
 
-  if (file && file.size > POST_IMAGE_MAX_BYTES) {
+  if (!file || file.size === 0) {
+    return NextResponse.json(
+      { message: "대표 이미지를 첨부해주세요." },
+      { status: 400 },
+    );
+  }
+
+  if (file.size > POST_IMAGE_MAX_BYTES) {
     return NextResponse.json(
       { message: "이미지는 5MB 이하로 업로드해주세요." },
       { status: 400 },
     );
   }
 
-  if (file && !ALLOWED_IMAGE_TYPES.has(file.type)) {
+  if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
     return NextResponse.json(
       { message: "PNG, JPG, WEBP 형식의 이미지만 지원합니다." },
       { status: 400 },
@@ -124,30 +129,28 @@ export async function POST(request: Request) {
     },
   });
 
-  if (file && file.size > 0) {
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const extension = resolveImageExtension(file.type, file.name);
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const extension = resolveImageExtension(file.type, file.name);
 
-    try {
-      const relativePath = await writePostImage(created.id, buffer, extension);
+  try {
+    const relativePath = await writePostImage(created.id, buffer, extension);
 
-      await prisma.post.update({
-        where: { id: created.id },
-        data: {
-          imagePath: relativePath,
-        },
-      });
-    } catch (error) {
-      await prisma.post.delete({ where: { id: created.id } });
-      console.error("이미지 업로드 실패", error);
+    await prisma.post.update({
+      where: { id: created.id },
+      data: {
+        imagePath: relativePath,
+      },
+    });
+  } catch (error) {
+    await prisma.post.delete({ where: { id: created.id } });
+    console.error("이미지 업로드 실패", error);
 
-      return NextResponse.json(
-        {
-          message: "이미지를 업로드하지 못했습니다. 잠시 후 다시 시도해주세요.",
-        },
-        { status: 500 },
-      );
-    }
+    return NextResponse.json(
+      {
+        message: "이미지를 업로드하지 못했습니다. 잠시 후 다시 시도해주세요.",
+      },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json(

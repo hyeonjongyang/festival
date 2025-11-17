@@ -1,6 +1,4 @@
-export const POINT_AWARD_VALUE = 30;
-export const POINT_AWARD_WINDOW_MINUTES = 30;
-export const BOOTH_RECENT_LOG_LIMIT = 25;
+export const BOOTH_RECENT_VISIT_LIMIT = 25;
 
 export const FEED_PAGE_DEFAULT_SIZE = 8;
 export const FEED_PAGE_MAX_SIZE = 24;
@@ -9,5 +7,5 @@ export const POST_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
 export const ADMIN_ACTIVE_BOOTH_WINDOW_HOURS = 24;
 export const ADMIN_RECENT_POST_LIMIT = 6;
-export const ADMIN_RECENT_POINT_LOG_LIMIT = 10;
+export const ADMIN_RECENT_VISIT_LOG_LIMIT = 10;
 export const ADMIN_WARNING_LIMIT = 6;

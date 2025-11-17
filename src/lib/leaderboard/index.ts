@@ -1,140 +1,114 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { formatStudentLabel } from "@/lib/points/logs";
-
-export const LEADERBOARD_GRADES = [1, 2] as const;
-
-export type LeaderboardGrade = (typeof LEADERBOARD_GRADES)[number];
-export type LeaderboardGradeFilter = LeaderboardGrade | "all";
-
-export type LeaderboardEntry = {
-  id: string;
-  rank: number;
-  nickname: string;
-  points: number;
-  grade: number | null;
-  classNumber: number | null;
-  studentNumber: number | null;
-  profileLabel: string;
-};
-
-export type LeaderboardResult = {
-  grade: LeaderboardGradeFilter;
-  generatedAt: string;
-  totalStudents: number;
-  entries: LeaderboardEntry[];
-};
-
-export type FetchLeaderboardOptions = {
-  grade?: LeaderboardGradeFilter | number | string | null | undefined;
-};
-
-const leaderboardSelect = {
-  id: true,
-  nickname: true,
-  points: true,
-  grade: true,
-  classNumber: true,
-  studentNumber: true,
-} as const satisfies Prisma.UserSelect;
-
-export type LeaderboardRecord = Prisma.UserGetPayload<{
-  select: typeof leaderboardSelect;
-}>;
+import {
+  fetchBoothRatingStats,
+  type BoothRatingAggregate,
+} from "@/lib/ratings";
 
 const collator = new Intl.Collator("ko", {
   sensitivity: "base",
   usage: "sort",
 });
 
-export function normalizeLeaderboardGrade(
-  value: FetchLeaderboardOptions["grade"],
-): LeaderboardGradeFilter {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return LEADERBOARD_GRADES.includes(value as LeaderboardGrade)
-      ? (value as LeaderboardGrade)
-      : "all";
-  }
+const boothLeaderboardSelect = {
+  id: true,
+  name: true,
+  location: true,
+  owner: {
+    select: {
+      nickname: true,
+    },
+  },
+  _count: {
+    select: {
+      visits: true,
+    },
+  },
+} as const satisfies Prisma.BoothSelect;
 
-  if (typeof value === "string") {
-    const trimmed = value.trim().toLowerCase();
+export type BoothLeaderboardRecord = Prisma.BoothGetPayload<{
+  select: typeof boothLeaderboardSelect;
+}>;
 
-    if (!trimmed || trimmed === "all") {
-      return "all";
-    }
+export type BoothLeaderboardEntry = {
+  id: string;
+  rank: number;
+  boothName: string;
+  totalVisits: number;
+  location: string | null;
+  ownerNickname: string;
+  averageRating: number | null;
+  ratingCount: number;
+};
 
-    const parsed = Number(trimmed);
+export type BoothLeaderboardResult = {
+  generatedAt: string;
+  totalBooths: number;
+  entries: BoothLeaderboardEntry[];
+};
 
-    if (Number.isFinite(parsed) && LEADERBOARD_GRADES.includes(parsed as LeaderboardGrade)) {
-      return parsed as LeaderboardGrade;
-    }
-  }
-
-  return "all";
-}
-
-export function sortLeaderboardRecords(records: LeaderboardRecord[]) {
+export function sortBoothLeaderboardRecords(
+  records: BoothLeaderboardRecord[],
+) {
   return [...records].sort((a, b) => {
-    if (a.points !== b.points) {
-      return b.points - a.points;
+    const visitDelta = (b._count?.visits ?? 0) - (a._count?.visits ?? 0);
+
+    if (visitDelta !== 0) {
+      return visitDelta;
     }
 
-    return collator.compare(a.nickname, b.nickname);
+    return collator.compare(a.name, b.name);
   });
 }
 
-export function rankLeaderboardRecords(
-  records: LeaderboardRecord[],
-): LeaderboardEntry[] {
-  const sorted = sortLeaderboardRecords(records);
+export function rankBoothLeaderboardRecords(
+  records: BoothLeaderboardRecord[],
+  ratingStats?: Map<string, BoothRatingAggregate>,
+): BoothLeaderboardEntry[] {
+  const sorted = sortBoothLeaderboardRecords(records);
 
   let currentRank = 0;
-  let previousPoints: number | null = null;
+  let previousVisitCount: number | null = null;
 
   return sorted.map((record) => {
-    if (previousPoints === null || record.points !== previousPoints) {
+    const visitCount = record._count?.visits ?? 0;
+
+    if (previousVisitCount === null || visitCount !== previousVisitCount) {
       currentRank += 1;
-      previousPoints = record.points;
+      previousVisitCount = visitCount;
     }
+
+    const stats = ratingStats?.get(record.id);
 
     return {
       id: record.id,
       rank: currentRank,
-      nickname: record.nickname,
-      points: record.points,
-      grade: record.grade ?? null,
-      classNumber: record.classNumber ?? null,
-      studentNumber: record.studentNumber ?? null,
-      profileLabel: formatStudentLabel(record),
+      boothName: record.name,
+      totalVisits: visitCount,
+      location: record.location ?? null,
+      ownerNickname: record.owner.nickname,
+      averageRating: stats ? Number(stats.average.toFixed(1)) : null,
+      ratingCount: stats?.count ?? 0,
     };
   });
 }
 
-export async function fetchLeaderboard(
-  options: FetchLeaderboardOptions = {},
-): Promise<LeaderboardResult> {
-  const grade = normalizeLeaderboardGrade(options.grade);
-  const where: Prisma.UserWhereInput = { role: "STUDENT" };
-
-  if (grade !== "all") {
-    where.grade = grade;
-  }
-
-  const records = await prisma.user.findMany({
-    where,
+export async function fetchBoothLeaderboard(): Promise<BoothLeaderboardResult> {
+  const records = await prisma.booth.findMany({
+    select: boothLeaderboardSelect,
     orderBy: [
-      { points: "desc" },
-      { nickname: "asc" },
+      { visits: { _count: "desc" } },
+      { name: "asc" },
     ],
-    select: leaderboardSelect,
   });
 
-  const entries = rankLeaderboardRecords(records);
+  const ratingStats = await fetchBoothRatingStats(records.map((record) => record.id));
+
+  const entries = rankBoothLeaderboardRecords(records, ratingStats);
 
   return {
-    grade,
     generatedAt: new Date().toISOString(),
-    totalStudents: entries.length,
+    totalBooths: entries.length,
     entries,
   };
 }

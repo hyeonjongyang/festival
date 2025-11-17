@@ -31,14 +31,8 @@ export async function deletePost(params: DeletePostParams) {
     throw new PostDeleteForbiddenError();
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.heart.deleteMany({
-      where: { postId: params.postId },
-    });
-
-    await tx.post.delete({
-      where: { id: params.postId },
-    });
+  await prisma.post.delete({
+    where: { id: params.postId },
   });
 
   await removePostAssets(post.imagePath);

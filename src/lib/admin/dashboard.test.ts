@@ -1,29 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { PointViolationType } from "@prisma/client";
+import { VisitViolationType } from "@prisma/client";
 import {
   fetchAdminDashboard,
-  mapRecentPointLog,
+  mapRecentVisitLog,
   mapRecentPost,
   mapViolationRecord,
 } from "@/lib/admin/dashboard";
 
 const prismaMocks = vi.hoisted(() => {
   return {
-    pointLogAggregate: vi.fn(),
+    boothVisitCount: vi.fn(),
+    boothVisitGroupBy: vi.fn(),
     boothCount: vi.fn(),
     postCount: vi.fn(),
     postFindMany: vi.fn(),
-    pointLogFindMany: vi.fn(),
-    pointViolationFindMany: vi.fn(),
+    boothVisitFindMany: vi.fn(),
+    visitViolationFindMany: vi.fn(),
   };
 });
 
 vi.mock("@/lib/prisma", () => {
   return {
     prisma: {
-      pointLog: {
-        aggregate: prismaMocks.pointLogAggregate,
-        findMany: prismaMocks.pointLogFindMany,
+      boothVisit: {
+        count: prismaMocks.boothVisitCount,
+        groupBy: prismaMocks.boothVisitGroupBy,
+        findMany: prismaMocks.boothVisitFindMany,
       },
       booth: {
         count: prismaMocks.boothCount,
@@ -32,8 +34,8 @@ vi.mock("@/lib/prisma", () => {
         count: prismaMocks.postCount,
         findMany: prismaMocks.postFindMany,
       },
-      pointViolation: {
-        findMany: prismaMocks.pointViolationFindMany,
+      visitViolation: {
+        findMany: prismaMocks.visitViolationFindMany,
       },
       $transaction: async (promises: Promise<unknown>[]) => {
         return Promise.all(promises);
@@ -43,21 +45,26 @@ vi.mock("@/lib/prisma", () => {
 });
 
 const {
-  pointLogAggregate,
+  boothVisitCount,
+  boothVisitGroupBy,
   boothCount,
   postCount,
   postFindMany,
-  pointLogFindMany,
-  pointViolationFindMany,
+  boothVisitFindMany,
+  visitViolationFindMany,
 } = prismaMocks;
 
 beforeEach(() => {
   vi.clearAllMocks();
 
-  pointLogAggregate.mockResolvedValue({
-    _count: { _all: 3 },
-    _sum: { points: 90 },
-  });
+  boothVisitCount.mockReset();
+  boothVisitCount.mockResolvedValue(3);
+
+  boothVisitGroupBy.mockReset();
+  boothVisitGroupBy.mockResolvedValue([
+    { studentId: "student_1", _count: { _all: 2 } },
+    { studentId: "student_2", _count: { _all: 1 } },
+  ]);
 
   boothCount.mockResolvedValue(2);
   postCount.mockResolvedValue(5);
@@ -67,15 +74,21 @@ beforeEach(() => {
       body: " 첫 번째   게시글 입니다.   ",
       createdAt: new Date("2024-05-12T00:00:00.000Z"),
       booth: { name: "포토존" },
-      author: { nickname: "은하수" },
+      author: {
+        id: "user_1",
+        role: "BOOTH_MANAGER",
+        nickname: "은하수",
+        grade: null,
+        classNumber: null,
+        studentNumber: null,
+      },
     },
   ]);
 
-  pointLogFindMany.mockResolvedValue([
+  boothVisitFindMany.mockResolvedValue([
     {
       id: "log_1",
-      points: 30,
-      awardedAt: new Date("2024-05-12T01:00:00.000Z"),
+      visitedAt: new Date("2024-05-12T01:00:00.000Z"),
       booth: { name: "게임존" },
       student: {
         nickname: "별빛",
@@ -85,13 +98,12 @@ beforeEach(() => {
       },
     },
   ]);
-
-  pointViolationFindMany.mockResolvedValue([
+  visitViolationFindMany.mockResolvedValue([
     {
       id: "violation_1",
-      type: PointViolationType.DUPLICATE_AWARD,
+      type: VisitViolationType.DUPLICATE_VISIT,
       detectedAt: new Date("2024-05-12T01:10:00.000Z"),
-      lastAwardedAt: new Date("2024-05-12T00:55:00.000Z"),
+      lastVisitedAt: new Date("2024-05-12T00:55:00.000Z"),
       availableAt: new Date("2024-05-12T01:25:00.000Z"),
       booth: { name: "게임존" },
       student: {
@@ -111,23 +123,29 @@ describe("mapRecentPost", () => {
       body: "  여러 줄로   이루어진 본문이 존재합니다. 추가 설명이 뒤따릅니다. ",
       createdAt: new Date("2024-05-12T00:00:00.000Z"),
       booth: { name: "포토존" },
-      author: { nickname: "소라" },
+      author: {
+        id: "user_2",
+        role: "ADMIN",
+        nickname: "소라",
+        grade: null,
+        classNumber: null,
+        studentNumber: null,
+      },
     } as const;
 
     const mapped = mapRecentPost(record);
 
     expect(mapped.preview).toMatch(/^여러 줄로 이루어진 본문이 존재합니다\./);
     expect(mapped.boothName).toBe("포토존");
-    expect(mapped.authorNickname).toBe("소라");
+    expect(mapped.authorName).toBe("소라");
   });
 });
 
-describe("mapRecentPointLog", () => {
+describe("mapRecentVisitLog", () => {
   it("formats the student label and timestamps", () => {
     const record = {
       id: "log_1",
-      points: 30,
-      awardedAt: new Date("2024-05-12T01:00:00.000Z"),
+      visitedAt: new Date("2024-05-12T01:00:00.000Z"),
       booth: { name: "게임존" },
       student: {
         nickname: "별빛",
@@ -137,11 +155,12 @@ describe("mapRecentPointLog", () => {
       },
     } as const;
 
-    const mapped = mapRecentPointLog(record);
+    const mapped = mapRecentVisitLog(record);
 
     expect(mapped.studentLabel).toBe("2학년 3반 12번");
+    expect(mapped.studentIdentifier).toBe("20312");
     expect(mapped.boothName).toBe("게임존");
-    expect(mapped.awardedAt).toBe("2024-05-12T01:00:00.000Z");
+    expect(mapped.visitedAt).toBe("2024-05-12T01:00:00.000Z");
   });
 });
 
@@ -149,9 +168,9 @@ describe("mapViolationRecord", () => {
   it("returns a warning summary and metadata", () => {
     const record = {
       id: "violation_1",
-      type: PointViolationType.DUPLICATE_AWARD,
+      type: VisitViolationType.DUPLICATE_VISIT,
       detectedAt: new Date("2024-05-12T01:10:00.000Z"),
-      lastAwardedAt: new Date("2024-05-12T00:55:00.000Z"),
+      lastVisitedAt: new Date("2024-05-12T00:55:00.000Z"),
       availableAt: new Date("2024-05-12T01:25:00.000Z"),
       booth: { name: "게임존" },
       student: {
@@ -165,8 +184,9 @@ describe("mapViolationRecord", () => {
     const mapped = mapViolationRecord(record);
 
     expect(mapped.severity).toBe("warning");
-    expect(mapped.summary).toContain("중복 지급");
-    expect(mapped.availableAt).toBe("2024-05-12T01:25:00.000Z");
+    expect(mapped.summary).toContain("재방문");
+    expect(mapped.lastVisitedAt).toBe("2024-05-12T00:55:00.000Z");
+    expect(mapped.studentIdentifier).toBe("20312");
   });
 });
 
@@ -174,19 +194,20 @@ describe("fetchAdminDashboard", () => {
   it("composes statistics, recent activity and warnings", async () => {
     const dashboard = await fetchAdminDashboard();
 
-    expect(pointLogAggregate).toHaveBeenCalledTimes(1);
+    expect(boothVisitCount).toHaveBeenCalledTimes(1);
+    expect(boothVisitGroupBy).toHaveBeenCalledTimes(1);
     expect(boothCount).toHaveBeenCalledTimes(1);
     expect(postCount).toHaveBeenCalledTimes(1);
 
     expect(dashboard.stats).toEqual({
-      totalAwards: 3,
-      totalPointsAwarded: 90,
+      totalVisits: 3,
+      uniqueVisitors: 2,
       activeBooths: 2,
       totalPosts: 5,
     });
 
     expect(dashboard.recentPosts).toHaveLength(1);
-    expect(dashboard.recentPointLogs[0]?.studentNickname).toBe("별빛");
-    expect(dashboard.warnings[0]?.type).toBe(PointViolationType.DUPLICATE_AWARD);
+    expect(dashboard.recentVisitLogs[0]?.studentIdentifier).toBe("20312");
+    expect(dashboard.warnings[0]?.type).toBe(VisitViolationType.DUPLICATE_VISIT);
   });
 });

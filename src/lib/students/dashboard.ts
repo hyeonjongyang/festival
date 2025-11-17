@@ -1,42 +1,46 @@
 import { prisma } from "@/lib/prisma";
 import { StudentAccessError } from "@/lib/students/errors";
+import { formatStudentId } from "@/lib/students/student-id";
 
-export const RECENT_POINT_LOG_LIMIT = 10;
+export const RECENT_VISIT_LOG_LIMIT = 10;
 
-export type StudentPointLogItem = {
+export type StudentVisitLogItem = {
   id: string;
+  boothId: string | null;
   boothName: string;
-  points: number;
-  awardedAt: string;
+  visitedAt: string;
+  rating: number | null;
 };
 
 export type StudentDashboardData = {
   id: string;
-  nickname: string;
-  nicknameLocked: boolean;
+  studentId: string | null;
   grade: number | null;
   classNumber: number | null;
   studentNumber: number | null;
-  points: number;
-  qrToken: string;
-  recentLogs: StudentPointLogItem[];
+  visitCount: number;
+  recentVisits: StudentVisitLogItem[];
 };
 
-type PointLogRecord = {
+type VisitLogRecord = {
   id: string;
-  points: number;
-  awardedAt: Date;
+  visitedAt: Date;
   booth: {
+    id: string;
     name: string | null;
+    ratings: {
+      score: number;
+    }[];
   } | null;
 };
 
-export function mapPointLogs(records: PointLogRecord[]): StudentPointLogItem[] {
+export function mapVisitLogs(records: VisitLogRecord[]): StudentVisitLogItem[] {
   return records.map((record) => ({
     id: record.id,
+    boothId: record.booth?.id ?? null,
     boothName: formatBoothName(record.booth?.name),
-    points: record.points,
-    awardedAt: record.awardedAt.toISOString(),
+    visitedAt: record.visitedAt.toISOString(),
+    rating: record.booth?.ratings?.[0]?.score ?? null,
   }));
 }
 
@@ -53,13 +57,10 @@ export async function fetchStudentDashboard(
     select: {
       id: true,
       role: true,
-      nickname: true,
-      nicknameLocked: true,
       grade: true,
       classNumber: true,
       studentNumber: true,
-      points: true,
-      qrToken: true,
+      visitCount: true,
     },
   });
 
@@ -67,17 +68,23 @@ export async function fetchStudentDashboard(
     throw new StudentAccessError();
   }
 
-  const recentLogs = await prisma.pointLog.findMany({
+  const recentVisits = await prisma.boothVisit.findMany({
     where: { studentId: student.id },
-    orderBy: { awardedAt: "desc" },
-    take: RECENT_POINT_LOG_LIMIT,
+    orderBy: { visitedAt: "desc" },
+    take: RECENT_VISIT_LOG_LIMIT,
     select: {
       id: true,
-      points: true,
-      awardedAt: true,
+      visitedAt: true,
       booth: {
         select: {
+          id: true,
           name: true,
+          ratings: {
+            where: { studentId: student.id },
+            select: {
+              score: true,
+            },
+          },
         },
       },
     },
@@ -85,13 +92,11 @@ export async function fetchStudentDashboard(
 
   return {
     id: student.id,
-    nickname: student.nickname,
-    nicknameLocked: student.nicknameLocked,
+    studentId: formatStudentId(student),
     grade: student.grade ?? null,
     classNumber: student.classNumber ?? null,
     studentNumber: student.studentNumber ?? null,
-    points: student.points,
-    qrToken: student.qrToken,
-    recentLogs: mapPointLogs(recentLogs),
+    visitCount: student.visitCount,
+    recentVisits: mapVisitLogs(recentVisits),
   };
 }

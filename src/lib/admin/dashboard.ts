@@ -1,12 +1,14 @@
-import type { Prisma, PointViolationType } from "@prisma/client";
+import type { Prisma, VisitViolationType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { describeStudentId } from "@/lib/students/student-id";
+import { getUserDisplayName } from "@/lib/users/display-name";
 import {
   ADMIN_ACTIVE_BOOTH_WINDOW_HOURS,
-  ADMIN_RECENT_POINT_LOG_LIMIT,
   ADMIN_RECENT_POST_LIMIT,
+  ADMIN_RECENT_VISIT_LOG_LIMIT,
   ADMIN_WARNING_LIMIT,
 } from "@/lib/config/constants";
-import { formatStudentLabel } from "@/lib/points/logs";
+import { formatStudentLabel } from "@/lib/visits/logs";
 
 type RecentPostRecord = Prisma.PostGetPayload<{
   select: {
@@ -20,24 +22,8 @@ type RecentPostRecord = Prisma.PostGetPayload<{
     };
     author: {
       select: {
-        nickname: true;
-      };
-    };
-  };
-}>;
-
-type RecentPointLogRecord = Prisma.PointLogGetPayload<{
-  select: {
-    id: true;
-    points: true;
-    awardedAt: true;
-    booth: {
-      select: {
-        name: true;
-      };
-    };
-    student: {
-      select: {
+        id: true;
+        role: true;
         nickname: true;
         grade: true;
         classNumber: true;
@@ -47,7 +33,29 @@ type RecentPointLogRecord = Prisma.PointLogGetPayload<{
   };
 }>;
 
-type PointViolationRecord = Prisma.PointViolationGetPayload<{
+const recentVisitLogSelect = {
+  id: true,
+  visitedAt: true,
+  booth: {
+    select: {
+      name: true,
+    },
+  },
+  student: {
+    select: {
+      nickname: true,
+      grade: true,
+      classNumber: true,
+      studentNumber: true,
+    },
+  },
+} as const satisfies Prisma.BoothVisitSelect;
+
+type RecentVisitLogRecord = Prisma.BoothVisitGetPayload<{
+  select: typeof recentVisitLogSelect;
+}>;
+
+type VisitViolationRecord = Prisma.VisitViolationGetPayload<{
   include: {
     booth: {
       select: {
@@ -66,8 +74,8 @@ type PointViolationRecord = Prisma.PointViolationGetPayload<{
 }>;
 
 export type AdminStats = {
-  totalAwards: number;
-  totalPointsAwarded: number;
+  totalVisits: number;
+  uniqueVisitors: number;
   activeBooths: number;
   totalPosts: number;
 };
@@ -76,28 +84,26 @@ export type AdminRecentPost = {
   id: string;
   createdAt: string;
   boothName: string;
-  authorNickname: string;
+  authorName: string;
   preview: string;
 };
 
-export type AdminRecentPointLog = {
+export type AdminRecentVisitLog = {
   id: string;
-  awardedAt: string;
+  visitedAt: string;
   boothName: string;
-  studentNickname: string;
+  studentIdentifier: string;
   studentLabel: string;
-  points: number;
 };
 
 export type AdminWarning = {
   id: string;
-  type: PointViolationType;
+  type: VisitViolationType;
   severity: "warning" | "critical";
   detectedAt: string;
-  lastAwardedAt: string;
-  availableAt: string;
+  lastVisitedAt: string;
   boothName: string;
-  studentNickname: string;
+  studentIdentifier: string;
   studentLabel: string;
   summary: string;
 };
@@ -105,7 +111,7 @@ export type AdminWarning = {
 export type AdminDashboardData = {
   stats: AdminStats;
   recentPosts: AdminRecentPost[];
-  recentPointLogs: AdminRecentPointLog[];
+  recentVisitLogs: AdminRecentVisitLog[];
   warnings: AdminWarning[];
 };
 
@@ -115,26 +121,26 @@ export async function fetchAdminDashboard(): Promise<AdminDashboardData> {
   );
 
   const [
-    awardAggregate,
+    totalVisits,
+    uniqueVisitorGroups,
     activeBoothCount,
     totalPosts,
     recentPosts,
-    recentPointLogs,
+    recentVisitLogs,
     violations,
   ] = await prisma.$transaction([
-    prisma.pointLog.aggregate({
+    prisma.boothVisit.count(),
+    prisma.boothVisit.groupBy({
+      by: ["studentId"],
       _count: {
         _all: true,
-      },
-      _sum: {
-        points: true,
       },
     }),
     prisma.booth.count({
       where: {
-        pointLogs: {
+        visits: {
           some: {
-            awardedAt: {
+            visitedAt: {
               gte: activeWindowStart,
             },
           },
@@ -163,31 +169,14 @@ export async function fetchAdminDashboard(): Promise<AdminDashboardData> {
         },
       },
     }),
-    prisma.pointLog.findMany({
+    prisma.boothVisit.findMany({
       orderBy: {
-        awardedAt: "desc",
+        visitedAt: "desc",
       },
-      take: ADMIN_RECENT_POINT_LOG_LIMIT,
-      select: {
-        id: true,
-        points: true,
-        awardedAt: true,
-        booth: {
-          select: {
-            name: true,
-          },
-        },
-        student: {
-          select: {
-            nickname: true,
-            grade: true,
-            classNumber: true,
-            studentNumber: true,
-          },
-        },
-      },
+      take: ADMIN_RECENT_VISIT_LOG_LIMIT,
+      select: recentVisitLogSelect,
     }),
-    prisma.pointViolation.findMany({
+    prisma.visitViolation.findMany({
       orderBy: {
         detectedAt: "desc",
       },
@@ -212,13 +201,13 @@ export async function fetchAdminDashboard(): Promise<AdminDashboardData> {
 
   return {
     stats: {
-      totalAwards: awardAggregate._count?._all ?? 0,
-      totalPointsAwarded: awardAggregate._sum?.points ?? 0,
+      totalVisits,
+      uniqueVisitors: uniqueVisitorGroups.length,
       activeBooths: activeBoothCount,
       totalPosts,
     },
     recentPosts: recentPosts.map(mapRecentPost),
-    recentPointLogs: recentPointLogs.map(mapRecentPointLog),
+    recentVisitLogs: recentVisitLogs.map(mapRecentVisitLog),
     warnings: violations.map(mapViolationRecord),
   };
 }
@@ -228,54 +217,52 @@ export function mapRecentPost(record: RecentPostRecord): AdminRecentPost {
     id: record.id,
     createdAt: record.createdAt.toISOString(),
     boothName: formatBoothName(record.booth?.name),
-    authorNickname: record.author.nickname,
+    authorName: getUserDisplayName(record.author),
     preview: createPostPreview(record.body),
   };
 }
 
-export function mapRecentPointLog(
-  record: RecentPointLogRecord,
-): AdminRecentPointLog {
+export function mapRecentVisitLog(
+  record: RecentVisitLogRecord,
+): AdminRecentVisitLog {
   return {
     id: record.id,
-    awardedAt: record.awardedAt.toISOString(),
+    visitedAt: record.visitedAt.toISOString(),
     boothName: formatBoothName(record.booth?.name),
-    studentNickname: record.student.nickname,
+    studentIdentifier: describeStudentId(record.student),
     studentLabel: formatStudentLabel(record.student),
-    points: record.points,
   };
 }
 
-export function mapViolationRecord(record: PointViolationRecord): AdminWarning {
+export function mapViolationRecord(record: VisitViolationRecord): AdminWarning {
   return {
     id: record.id,
     type: record.type,
     severity: inferViolationSeverity(record.type),
     detectedAt: record.detectedAt.toISOString(),
-    lastAwardedAt: record.lastAwardedAt.toISOString(),
-    availableAt: record.availableAt.toISOString(),
+    lastVisitedAt: record.lastVisitedAt.toISOString(),
     boothName: formatBoothName(record.booth?.name),
-    studentNickname: record.student.nickname,
+    studentIdentifier: describeStudentId(record.student),
     studentLabel: formatStudentLabel(record.student),
     summary: formatViolationSummary(record),
   };
 }
 
 function inferViolationSeverity(
-  type: PointViolationType,
+  type: VisitViolationType,
 ): "warning" | "critical" {
   switch (type) {
-    case "DUPLICATE_AWARD":
+    case "DUPLICATE_VISIT":
       return "warning";
     default:
       return "warning";
   }
 }
 
-function formatViolationSummary(record: PointViolationRecord): string {
+function formatViolationSummary(record: VisitViolationRecord): string {
   switch (record.type) {
-    case "DUPLICATE_AWARD": {
-      return "30분 이내 중복 지급 시도가 차단되었습니다.";
+    case "DUPLICATE_VISIT": {
+      return "이미 방문한 부스를 재방문하려는 시도가 감지되어 차단했습니다.";
     }
     default:
       return "관찰이 필요한 이벤트가 감지되었습니다.";

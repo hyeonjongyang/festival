@@ -1,54 +1,43 @@
+import type { ReactNode } from "react";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bricolage_Grotesque, IBM_Plex_Sans_KR } from "next/font/google";
 import "./globals.css";
-import { SessionProvider } from "@/components/session-provider";
 import { getSessionUser } from "@/lib/auth/get-session-user";
-import { SkipNavLink } from "@/components/skip-nav";
+import { SessionProvider } from "@/components/session-context";
+import { SkipLink } from "@/components/a11y/skip-link";
+import { AppChrome } from "@/components/chrome/app-chrome";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const heading = Bricolage_Grotesque({
   subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-heading",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const body = IBM_Plex_Sans_KR({
+  subsets: ["latin", "korean"],
+  weight: ["400", "500", "600"],
+  variable: "--font-body",
 });
 
 export const metadata: Metadata = {
-  title: "Festival Connect | 학교 축제 운영 허브",
-  description:
-    "학생·부스·관리자 워크플로우를 한 곳에서 관리하는 모바일 전용 축제 플랫폼",
-  metadataBase: new URL("https://festival.local"),
-  openGraph: {
-    title: "Festival Connect",
-    description:
-      "QR 포인트 지급부터 피드, 리더보드까지 한 번에 운영하는 학교 축제 플랫폼",
-    url: "https://festival.local",
-    siteName: "Festival Connect",
-  },
-  twitter: {
-    card: "summary",
-    title: "Festival Connect",
-    description:
-      "QR 포인트 지급부터 피드, 리더보드까지 한 번에 운영하는 학교 축제 플랫폼",
-  },
+  title: "Festival Connect",
+  description: "학생 · 부스 · 운영팀을 위한 모바일 축제 운영 허브",
 };
 
 export default async function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const currentUser = await getSessionUser();
+}: {
+  children: ReactNode;
+}) {
+  const session = await getSessionUser();
 
   return (
-    <html lang="ko">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} bg-background text-foreground antialiased`}
-      >
-        <SkipNavLink />
-        <SessionProvider user={currentUser}>{children}</SessionProvider>
+    <html lang="ko" className={`${heading.variable} ${body.variable}`}>
+      <body>
+        <SessionProvider initialSession={session}>
+          <SkipLink />
+          <AppChrome>{children}</AppChrome>
+        </SessionProvider>
       </body>
     </html>
   );

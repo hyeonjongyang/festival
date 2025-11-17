@@ -21,23 +21,24 @@ describe("Prisma schema integrity", () => {
     "utf8",
   );
 
-  it("enforces a unique heart per user and post", () => {
-    const heart = getModel("Heart");
-    expect(heart.uniqueFields).toContainEqual(["postId", "userId"]);
+  it("creates composite indexes for visit throttling", () => {
+    expect(schemaSource).toContain("@@index([studentId, visitedAt])");
+    expect(schemaSource).toContain("@@index([boothId, visitedAt])");
   });
 
-  it("creates composite indexes for point log throttling", () => {
-    expect(schemaSource).toContain("@@index([studentId, awardedAt])");
-    expect(schemaSource).toContain("@@index([boothId, awardedAt])");
-  });
-
-  it("keeps login codes and QR tokens unique for each user", () => {
+  it("keeps login codes unique for each student and QR 토큰 unique per booth", () => {
     const user = getModel("User");
     const uniqueFields = user.fields
       .filter((field) => field.isUnique)
       .map((field) => field.name);
 
     expect(uniqueFields).toContain("code");
-    expect(uniqueFields).toContain("qrToken");
+
+    const booth = getModel("Booth");
+    const boothUniqueFields = booth.fields
+      .filter((field) => field.isUnique)
+      .map((field) => field.name);
+
+    expect(boothUniqueFields).toContain("qrToken");
   });
 });

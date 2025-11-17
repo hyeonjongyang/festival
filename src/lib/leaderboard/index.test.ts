@@ -1,105 +1,98 @@
 import { describe, expect, it } from "vitest";
 import {
-  normalizeLeaderboardGrade,
-  rankLeaderboardRecords,
-  sortLeaderboardRecords,
-  type LeaderboardRecord,
+  rankBoothLeaderboardRecords,
+  sortBoothLeaderboardRecords,
+  type BoothLeaderboardRecord,
 } from "@/lib/leaderboard";
 
-describe("normalizeLeaderboardGrade", () => {
-  it("returns all when input is missing or invalid", () => {
-    expect(normalizeLeaderboardGrade(undefined)).toBe("all");
-    expect(normalizeLeaderboardGrade("")).toBe("all");
-    expect(normalizeLeaderboardGrade("unknown")).toBe("all");
-    expect(normalizeLeaderboardGrade(0)).toBe("all");
-  });
-
-  it("accepts numeric strings and coerces them to numbers", () => {
-    expect(normalizeLeaderboardGrade("1")).toBe(1);
-    expect(normalizeLeaderboardGrade(" 2 ")).toBe(2);
-    expect(normalizeLeaderboardGrade("03")).toBe("all");
-  });
-
-  it("passes through already-normalized grade values", () => {
-    expect(normalizeLeaderboardGrade(2)).toBe(2);
-    expect(normalizeLeaderboardGrade("all")).toBe("all");
-  });
-});
-
-describe("sortLeaderboardRecords", () => {
-  it("sorts by points descending and nickname ascending when tied", () => {
+describe("sortBoothLeaderboardRecords", () => {
+  it("sorts by visit count descending and booth name ascending when tied", () => {
     const records = [
-      makeRecord({ id: "alpha", nickname: "하마", points: 90 }),
-      makeRecord({ id: "beta", nickname: "가방", points: 120 }),
-      makeRecord({ id: "gamma", nickname: "나비", points: 120 }),
-      makeRecord({ id: "delta", nickname: "다람쥐", points: 50 }),
+      makeBoothRecord({ id: "photo", name: "포토존", visitCount: 120 }),
+      makeBoothRecord({ id: "game", name: "게임존", visitCount: 150 }),
+      makeBoothRecord({ id: "event", name: "이벤트존", visitCount: 150 }),
+      makeBoothRecord({ id: "food", name: "푸드트럭", visitCount: 60 }),
     ];
 
-    const sorted = sortLeaderboardRecords(records);
+    const sorted = sortBoothLeaderboardRecords(records);
+
     expect(sorted.map((record) => record.id)).toEqual([
-      "beta",
-      "gamma",
-      "alpha",
-      "delta",
+      "game",
+      "event",
+      "photo",
+      "food",
     ]);
   });
 });
 
-describe("rankLeaderboardRecords", () => {
-  it("assigns dense ranks and exposes formatted labels", () => {
+describe("rankBoothLeaderboardRecords", () => {
+  it("assigns dense ranks for booths with identical visit counts", () => {
     const records = [
-      makeRecord({
-        id: "beta",
-        nickname: "가방",
-        points: 120,
-        grade: 2,
-        classNumber: 3,
-        studentNumber: 4,
+      makeBoothRecord({
+        id: "game",
+        name: "게임존",
+        visitCount: 150,
+        ownerNickname: "게임왕",
+        location: "운동장",
       }),
-      makeRecord({
-        id: "gamma",
-        nickname: "나비",
-        points: 120,
-        grade: 2,
-        classNumber: 1,
-        studentNumber: 8,
+      makeBoothRecord({
+        id: "event",
+        name: "이벤트존",
+        visitCount: 150,
+        ownerNickname: "행사요정",
+        location: "강당",
       }),
-      makeRecord({
-        id: "alpha",
-        nickname: "하마",
-        points: 90,
-        grade: 1,
-        classNumber: 2,
-        studentNumber: 10,
-      }),
-      makeRecord({
-        id: "delta",
-        nickname: "다람쥐",
-        points: 50,
-        grade: null,
-        classNumber: null,
-        studentNumber: null,
+      makeBoothRecord({
+        id: "photo",
+        name: "포토존",
+        visitCount: 120,
+        ownerNickname: "추억저장",
+        location: null,
       }),
     ];
 
-    const ranked = rankLeaderboardRecords(records);
+    const ranked = rankBoothLeaderboardRecords(records);
 
-    expect(ranked.map((entry) => entry.rank)).toEqual([1, 1, 2, 3]);
-    expect(ranked[0]?.profileLabel).toBe("2학년 3반 4번");
-    expect(ranked[3]?.profileLabel).toBe("학년 정보 없음");
+    expect(ranked.map((entry) => entry.rank)).toEqual([1, 1, 2]);
+    expect(ranked[0]?.boothName).toBe("게임존");
+    expect(ranked[1]?.ownerNickname).toBe("행사요정");
+    expect(ranked[2]?.location).toBeNull();
+  });
+
+  it("adds rating aggregates when available", () => {
+    const records = [
+      makeBoothRecord({ id: "game", name: "게임존", visitCount: 10 }),
+      makeBoothRecord({ id: "photo", name: "포토존", visitCount: 8 }),
+    ];
+
+    const ranked = rankBoothLeaderboardRecords(
+      records,
+      new Map([["game", { average: 4.333333, count: 6 }]]),
+    );
+
+    expect(ranked[0]?.averageRating).toBeCloseTo(4.3);
+    expect(ranked[0]?.ratingCount).toBe(6);
+    expect(ranked[1]?.averageRating).toBeNull();
+    expect(ranked[1]?.ratingCount).toBe(0);
   });
 });
 
-function makeRecord(
-  input: Partial<LeaderboardRecord> &
-    Pick<LeaderboardRecord, "id" | "nickname" | "points">,
-): LeaderboardRecord {
+function makeBoothRecord(input: {
+  id: string;
+  name: string;
+  visitCount: number;
+  ownerNickname?: string;
+  location?: string | null;
+}): BoothLeaderboardRecord {
   return {
     id: input.id,
-    nickname: input.nickname,
-    points: input.points,
-    grade: input.grade ?? null,
-    classNumber: input.classNumber ?? null,
-    studentNumber: input.studentNumber ?? null,
+    name: input.name,
+    location: input.location ?? null,
+    owner: {
+      nickname: input.ownerNickname ?? "부스장",
+    },
+    _count: {
+      visits: input.visitCount,
+    },
   };
 }

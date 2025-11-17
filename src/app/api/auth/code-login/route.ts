@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { formatStudentId } from "@/lib/students/student-id";
 import {
   clearSessionCookie,
   createSessionToken,
@@ -46,11 +47,10 @@ export async function POST(request: Request) {
       id: true,
       role: true,
       nickname: true,
-      nicknameLocked: true,
       grade: true,
       classNumber: true,
       studentNumber: true,
-      points: true,
+      visitCount: true,
     },
   });
 
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
   const token = createSessionToken(user.id, user.role);
   await setSessionCookie(token);
 
-  return NextResponse.json({ user });
+  return NextResponse.json({ user: { ...user, studentId: formatStudentId(user) } });
 }
 
 export async function DELETE() {

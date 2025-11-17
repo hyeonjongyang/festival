@@ -13,9 +13,6 @@ const prismaMocks = vi.hoisted(() => {
       findUnique: vi.fn(),
       delete: vi.fn(),
     },
-    heart: {
-      deleteMany: vi.fn(),
-    },
   };
 });
 
@@ -28,23 +25,15 @@ vi.mock("node:fs/promises", () => {
 });
 
 vi.mock("@/lib/prisma", () => {
-  const { post, heart } = prismaMocks;
+  const { post } = prismaMocks;
   return {
     prisma: {
       post,
-      heart,
-      $transaction: async (
-        callback: (tx: {
-          post: typeof post;
-          heart: typeof heart;
-        }) => unknown,
-      ) => callback({ post, heart }),
     },
   };
 });
 
 const postQueries = prismaMocks.post;
-const heartQueries = prismaMocks.heart;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -55,7 +44,6 @@ beforeEach(() => {
     imagePath: "/uploads/posts/post_1/image.jpg",
   });
   postQueries.delete.mockResolvedValue(undefined);
-  heartQueries.deleteMany.mockResolvedValue({ count: 1 });
   rmMock.mockResolvedValue(undefined);
 });
 
@@ -67,9 +55,6 @@ describe("deletePost", () => {
       requesterRole: UserRole.BOOTH_MANAGER,
     });
 
-    expect(heartQueries.deleteMany).toHaveBeenCalledWith({
-      where: { postId: "post_1" },
-    });
     expect(postQueries.delete).toHaveBeenCalledWith({
       where: { id: "post_1" },
     });
@@ -92,9 +77,6 @@ describe("deletePost", () => {
       requesterRole: UserRole.ADMIN,
     });
 
-    expect(heartQueries.deleteMany).toHaveBeenCalledWith({
-      where: { postId: "post_2" },
-    });
     expect(postQueries.delete).toHaveBeenCalledWith({
       where: { id: "post_2" },
     });
@@ -105,11 +87,10 @@ describe("deletePost", () => {
       deletePost({
         postId: "post_1",
         requesterId: "intruder",
-        requesterRole: UserRole.BOOTH_MANAGER,
-      }),
-    ).rejects.toBeInstanceOf(PostDeleteForbiddenError);
+      requesterRole: UserRole.BOOTH_MANAGER,
+    }),
+  ).rejects.toBeInstanceOf(PostDeleteForbiddenError);
 
-    expect(heartQueries.deleteMany).not.toHaveBeenCalled();
     expect(postQueries.delete).not.toHaveBeenCalled();
     expect(rmMock).not.toHaveBeenCalled();
   });
