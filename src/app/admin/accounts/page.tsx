@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { isBoothRegistrationOpen } from "@/lib/features/booth-registration";
 import { StudentBatchForm, BoothAccountsForm, AdminAccountsForm, BoothRegistrationToggle } from "@/components/admin/accounts-forms";
 import type { AccountBatchPayload } from "@/types/api";
+import { getBatchDownloadUrl } from "@/lib/accounts/download-url";
 
 const createdAtFormatter = new Intl.DateTimeFormat("ko-KR", {
   month: "short",
@@ -76,7 +77,7 @@ function BatchHistory({ batches }: { batches: BatchItem[] }) {
                   </div>
                 ) : null}
                 {batch.xlsxPath ? (
-                  <a href={batch.xlsxPath} className="mt-3 inline-flex text-xs text-[var(--accent)]">
+                  <a href={getBatchDownloadUrl(batch.id)} className="mt-3 inline-flex text-xs text-[var(--accent)]">
                     Excel 다시 받기
                   </a>
                 ) : null}

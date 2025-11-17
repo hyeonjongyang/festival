@@ -5,6 +5,7 @@ import { AccountBatchKind } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { createUniqueCodeFactory } from "@/lib/accounts/code-factory";
 import { STUDENT_BATCH_SIZE_LIMIT } from "@/lib/accounts/batch-constants";
+import { getBatchDownloadUrl } from "@/lib/accounts/download-url";
 import { formatStudentId } from "@/lib/students/student-id";
 import type {
   StudentAccountPreview,
@@ -168,17 +169,17 @@ export async function createStudentAccountsBatch(
     };
   });
 
-  const downloadPath = await writeStudentWorkbook(persistedStudents, batchId);
+  const fileStoragePath = await writeStudentWorkbook(persistedStudents, batchId);
 
   await prisma.accountBatch.update({
     where: { id: batchId },
-    data: { xlsxPath: downloadPath },
+    data: { xlsxPath: fileStoragePath },
   });
 
   return {
     batchId,
     createdCount: persistedStudents.length,
-    downloadPath,
+    downloadPath: getBatchDownloadUrl(batchId),
     previewAccounts,
   };
 }
