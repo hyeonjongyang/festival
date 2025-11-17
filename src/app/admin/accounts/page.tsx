@@ -19,6 +19,7 @@ export default async function AdminAccountsPage() {
       take: 8,
       select: {
         id: true,
+        createdBy: true,
         kind: true,
         payload: true,
         createdAt: true,

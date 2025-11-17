@@ -14,7 +14,7 @@ const heading = Bricolage_Grotesque({
 });
 
 const body = IBM_Plex_Sans_KR({
-  subsets: ["latin", "korean"],
+  subsets: ["latin"],
   weight: ["400", "500", "600"],
   variable: "--font-body",
 });

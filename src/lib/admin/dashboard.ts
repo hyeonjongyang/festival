@@ -135,6 +135,9 @@ export async function fetchAdminDashboard(): Promise<AdminDashboardData> {
       _count: {
         _all: true,
       },
+      orderBy: {
+        studentId: "asc",
+      },
     }),
     prisma.booth.count({
       where: {
@@ -164,7 +167,12 @@ export async function fetchAdminDashboard(): Promise<AdminDashboardData> {
         },
         author: {
           select: {
+            id: true,
+            role: true,
             nickname: true,
+            grade: true,
+            classNumber: true,
+            studentNumber: true,
           },
         },
       },

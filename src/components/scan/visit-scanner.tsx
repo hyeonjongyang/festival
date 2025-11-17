@@ -240,7 +240,8 @@ function ScannerModal({ onClose, onDetect, busy }: ScannerModalProps) {
       rafRef.current = null;
     }
 
-    readerRef.current?.reset?.();
+    const reader = readerRef.current as (BrowserMultiFormatReader & { reset?: () => void }) | null;
+    reader?.reset?.();
     readerRef.current = null;
     canvasRef.current = null;
     contextRef.current = null;

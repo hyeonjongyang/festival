@@ -1,12 +1,10 @@
 import type { UserRole } from "@prisma/client";
 import { describeStudentId } from "@/lib/students/student-id";
+import type { StudentNumberParams } from "@/lib/students/student-id";
 
-type UserDisplaySource = {
+type UserDisplaySource = StudentNumberParams & {
   role: UserRole;
   nickname: string | null;
-  grade?: number | null;
-  classNumber?: number | null;
-  studentNumber?: number | null;
 };
 
 export function getUserDisplayName(source: UserDisplaySource): string {

@@ -60,7 +60,7 @@ const REVEAL_SELECTOR = ELEMENT_SELECTORS.join(", ");
 const GROUPABLE_SELECTOR =
   "[data-reveal-group], main, section, article, header, footer, nav, form, ul, ol, dl, table, tbody, thead, .glass-card, .app-shell__chrome, .app-shell";
 
-export function useStaggeredReveal(rootRef: RefObject<HTMLElement>, reflowKey?: string) {
+export function useStaggeredReveal(rootRef: RefObject<HTMLElement | null>, reflowKey?: string) {
   useLayoutEffect(() => {
     if (typeof window === "undefined") {
       return;

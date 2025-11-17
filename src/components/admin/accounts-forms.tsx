@@ -10,12 +10,14 @@ import {
   toggleRegistrationAction,
 } from "@/app/admin/accounts/actions";
 
-const initialState: ActionResult = { ok: false, message: "" };
+const studentInitialState: ActionResult<StudentBatchResult | undefined> = { ok: false, message: "" };
+const boothInitialState: ActionResult<BoothBatchResult | undefined> = { ok: false, message: "" };
+const adminInitialState: ActionResult<AdminBatchResult | undefined> = { ok: false, message: "" };
 
 export function StudentBatchForm() {
-  const [state, formAction, pending] = useActionState<ActionResult<StudentBatchResult | undefined>>(
+  const [state, formAction, pending] = useActionState<ActionResult<StudentBatchResult | undefined>, FormData>(
     submitStudentBatch,
-    initialState,
+    studentInitialState,
   );
 
   return (
@@ -87,9 +89,9 @@ export function StudentBatchForm() {
 }
 
 export function BoothAccountsForm() {
-  const [state, formAction, pending] = useActionState<ActionResult<BoothBatchResult | undefined>>(
+  const [state, formAction, pending] = useActionState<ActionResult<BoothBatchResult | undefined>, FormData>(
     submitBoothBatch,
-    initialState,
+    boothInitialState,
   );
 
   return (
@@ -144,9 +146,9 @@ export function BoothAccountsForm() {
 }
 
 export function AdminAccountsForm() {
-  const [state, formAction, pending] = useActionState<ActionResult<AdminBatchResult | undefined>>(
+  const [state, formAction, pending] = useActionState<ActionResult<AdminBatchResult | undefined>, FormData>(
     submitAdminBatch,
-    initialState,
+    adminInitialState,
   );
 
   return (
@@ -183,7 +185,7 @@ export function AdminAccountsForm() {
 }
 
 export function BoothRegistrationToggle({ initialEnabled }: { initialEnabled: boolean }) {
-  const [state, formAction, pending] = useActionState<ActionResult>(toggleRegistrationAction, {
+  const [state, formAction, pending] = useActionState<ActionResult, FormData>(toggleRegistrationAction, {
     ok: true,
     message: initialEnabled ? "부스 접수 중" : "부스 접수 종료",
   });

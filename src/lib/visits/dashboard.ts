@@ -64,6 +64,9 @@ export async function fetchBoothVisitsDashboard(
       _count: {
         _all: true,
       },
+      orderBy: {
+        studentId: "asc",
+      },
     }),
   ]);
   const uniqueVisitors = uniqueVisitorGroups.length;

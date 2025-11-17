@@ -25,7 +25,7 @@ function maskStudentIdentifier(identifier: string) {
 export function BoothDashboard({ initial }: BoothDashboardProps) {
   const { dashboard } = useBoothDashboard(initial);
   const [status, setStatus] = useState<string | null>(null);
-  const qrSvgRef = useRef<SVGSVGElement | null>(null);
+  const qrContainerRef = useRef<HTMLDivElement | null>(null);
 
   if (!dashboard) {
     return (
@@ -36,12 +36,13 @@ export function BoothDashboard({ initial }: BoothDashboardProps) {
   }
 
   const downloadQrCode = () => {
-    if (!dashboard || !qrSvgRef.current) {
+    const svg = qrContainerRef.current?.querySelector("svg") as SVGSVGElement | null;
+
+    if (!dashboard || !svg) {
       setStatus("QR 코드가 아직 준비되지 않았습니다.");
       return;
     }
 
-    const svg = qrSvgRef.current;
     const serialized = new XMLSerializer().serializeToString(svg);
     const svgBlob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(svgBlob);
@@ -102,8 +103,8 @@ export function BoothDashboard({ initial }: BoothDashboardProps) {
           </div>
         </div>
         <div className="mt-4 flex flex-col items-center gap-4">
-          <div className="rounded-[18px] bg-white p-6 drop-shadow-[0_18px_32px_rgba(0,0,0,0.25)]">
-            <QRCode ref={qrSvgRef} value={dashboard.booth.qrToken} size={320} bgColor="#ffffff" fgColor="#040915" level="H" />
+          <div ref={qrContainerRef} className="rounded-[18px] bg-white p-6 drop-shadow-[0_18px_32px_rgba(0,0,0,0.25)]">
+            <QRCode value={dashboard.booth.qrToken} size={320} bgColor="#ffffff" fgColor="#040915" level="H" />
           </div>
           <button
             type="button"
