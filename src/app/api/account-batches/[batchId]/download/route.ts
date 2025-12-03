@@ -8,28 +8,27 @@ import { getSessionUser } from "@/lib/auth/get-session-user";
 const EXCEL_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 type RouteContext = {
-  params: {
+  params: Promise<{
     batchId: string;
-  };
+  }>;
 };
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export async function GET(request: NextRequest, { params }: RouteContext) {
   const session = await getSessionUser();
 
   if (!session || session.role !== "ADMIN") {
     return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
   }
 
-  const batchId =
-    context?.params?.batchId ??
-    extractBatchIdFromPath(request.nextUrl.pathname);
+  const { batchId } = await params;
+  const resolvedBatchId = batchId || extractBatchIdFromPath(request.nextUrl.pathname);
 
-  if (!batchId) {
+  if (!resolvedBatchId) {
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
   const batch = await prisma.accountBatch.findUnique({
-    where: { id: batchId },
+    where: { id: resolvedBatchId },
     select: {
       id: true,
       kind: true,
@@ -60,7 +59,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     throw error;
   }
 
-  const response = new NextResponse(fileBuffer);
+  const response = new NextResponse(fileBuffer as unknown as BodyInit); // Cast to satisfy BodyInit for binary payload
   response.headers.set("Content-Type", EXCEL_MIME);
   response.headers.set("Cache-Control", "no-store");
   response.headers.set("Content-Disposition", `attachment; filename="${createFilename(batch)}"`);
