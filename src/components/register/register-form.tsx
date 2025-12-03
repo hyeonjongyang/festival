@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useId, useState, type HTMLAttributes } from "react";
+import { FormEvent, useState, type HTMLAttributes } from "react";
 import { cn } from "@/lib/client/cn";
 
 type RegisterFormState = {
@@ -24,7 +24,6 @@ type SubmissionResult = {
 };
 
 export function RegisterForm() {
-  const formId = useId();
   const [form, setForm] = useState<RegisterFormState>(DEFAULT_FORM);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [pending, setPending] = useState(false);
@@ -87,24 +86,21 @@ export function RegisterForm() {
   };
 
   return (
-    <form className="register-form" aria-describedby={`${formId}-helper`} onSubmit={handleSubmit}>
-        <p id={`${formId}-helper`} className="register-form__subtitle">
-          필수 정보
-        </p>
+    <form className="register-form" onSubmit={handleSubmit}>
       <div className="register-form__grid">
         <RegisterTextField
           label="부스 이름"
           name="boothName"
-          placeholder="예: 별빛 도넛 팝업"
+          placeholder="예: 지구과학 동아리"
           value={form.boothName}
           onChange={(value) => updateField("boothName", value)}
           error={errorMessage("boothName")}
           required
         />
         <RegisterTextField
-          label="희망 위치"
+          label="부스 위치"
           name="location"
-          placeholder="체육관 입구, 잔디광장 등"
+          placeholder="에: 1층 지구과학실"
           value={form.location}
           onChange={(value) => updateField("location", value)}
           error={errorMessage("location")}
@@ -112,9 +108,9 @@ export function RegisterForm() {
       </div>
 
       <RegisterTextArea
-        label="부스 소개 (선택)"
+        label="부스 소개"
         name="description"
-        placeholder="메뉴, 체험, 한 줄 설명 등 간단하게 적어주세요."
+        placeholder="활동, 체험, 한 줄 설명 등 간단하게 적어주세요."
         value={form.description}
         onChange={(value) => updateField("description", value)}
         error={errorMessage("description")}
@@ -128,7 +124,7 @@ export function RegisterForm() {
         disabled={pending}
         aria-live="polite"
       >
-        {pending ? "등록 접수 중…" : "부스 등록 요청 보내기"}
+        {pending ? "등록 접수 중…" : "부스 등록하기"}
       </button>
 
       {status ? (
@@ -139,16 +135,11 @@ export function RegisterForm() {
 
       {result ? (
         <div className="register-result">
-          <p className="register-result__eyebrow">LOGIN CODE</p>
+          <p className="register-result__eyebrow">로그인 코드</p>
           <p className="register-result__code">{result.code}</p>
-          <p className="register-result__meta">
-            {result.boothName} · QR 코드는 방문 현황 페이지에서 내려받을 수 있습니다.
+          <p className="register-result__note">
+            로그인 코드는 이 페이지를 나가면 다시 볼 수 없으니 꼭 다른 곳에 저장해 주세요.
           </p>
-          <ul>
-            <li>코드를 잃어버리면 관리자 페이지에서만 재발급이 가능합니다.</li>
-            <li>로그인 후 `/booth/visits`에서 실시간 QR과 방문 현황을 확인하세요.</li>
-            <li>팀원이 여러 명이라면 동일 코드를 공유해 로그인할 수 있습니다.</li>
-          </ul>
         </div>
       ) : null}
     </form>

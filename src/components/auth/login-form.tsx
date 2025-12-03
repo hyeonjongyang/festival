@@ -56,7 +56,7 @@ export function LoginForm() {
     <div className="flex min-h-screen items-center justify-center px-6">
       <div className="w-full max-w-sm space-y-6 text-center">
         <h1 className="text-2xl font-semibold uppercase tracking-[0.18em] text-[var(--text-primary)] sm:text-3xl">
-          종촌고등학교 민마루제
+          종촌고등학교 부스 한마당
         </h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input

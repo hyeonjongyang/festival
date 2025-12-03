@@ -130,6 +130,7 @@
   padding: 1rem;
   background: transparent;
   border-radius: var(--radius-lg);
+  text-align: center;
 }
 
 .register-result__eyebrow {
@@ -144,18 +145,10 @@
   margin: 0.5rem 0;
 }
 
-.register-result__meta {
+.register-result__note {
   font-size: 0.85rem;
   color: var(--text-muted);
   margin-bottom: 0.6rem;
-}
-
-.register-result ul {
-  margin: 0;
-  padding-left: 1rem;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  line-height: 1.4;
 }
 
 .register-closed {
