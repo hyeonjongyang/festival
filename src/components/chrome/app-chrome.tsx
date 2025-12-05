@@ -8,6 +8,7 @@ import type { UserRole } from "@prisma/client";
 import { useSession } from "@/components/session-context";
 import { cn } from "@/lib/client/cn";
 import { useStaggeredReveal } from "@/hooks/use-staggered-reveal";
+import { BoothProfileButton } from "@/components/booth/booth-profile-button";
 
 type NavItem = {
   href: string;
@@ -42,6 +43,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
   const chromeRef = useRef<HTMLDivElement>(null);
   const navCardRef = useRef<HTMLDivElement>(null);
   const minimalChrome = !session && pathname === "/";
+  const showBoothProfile = session?.role === "BOOTH_MANAGER";
 
   const navItems = useMemo(() => {
     if (session) {
@@ -117,6 +119,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
 
   return (
     <div className="app-shell" ref={chromeRef}>
+      {showBoothProfile ? <BoothProfileButton /> : null}
       <div className="app-shell__chrome">
         <main id="main-content" className={cn("min-h-[60vh]", minimalChrome ? "p-0" : "px-4 py-5")}>
           {children}
