@@ -145,10 +145,29 @@
   margin: 0.5rem 0;
 }
 
+.register-result__warning {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--danger);
+  letter-spacing: 0.08em;
+  margin: 0.35rem 0 0.25rem;
+}
+
 .register-result__note {
   font-size: 0.85rem;
   color: var(--text-muted);
   margin-bottom: 0.6rem;
+}
+
+.register-result__actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.register-result__login {
+  width: 100%;
+  max-width: 320px;
 }
 
 .register-closed {

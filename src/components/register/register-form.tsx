@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { FormEvent, useState, type HTMLAttributes } from "react";
 import { cn } from "@/lib/client/cn";
 
@@ -24,6 +25,7 @@ type SubmissionResult = {
 };
 
 export function RegisterForm() {
+  const router = useRouter();
   const [form, setForm] = useState<RegisterFormState>(DEFAULT_FORM);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [pending, setPending] = useState(false);
@@ -118,14 +120,16 @@ export function RegisterForm() {
         maxLength={400}
       />
 
-      <button
-        type="submit"
-        className="register-submit"
-        disabled={pending}
-        aria-live="polite"
-      >
-        {pending ? "등록 접수 중…" : "부스 등록하기"}
-      </button>
+      {!result ? (
+        <button
+          type="submit"
+          className="register-submit"
+          disabled={pending}
+          aria-live="polite"
+        >
+          {pending ? "등록 접수 중…" : "부스 등록하기"}
+        </button>
+      ) : null}
 
       {status ? (
         <p role="status" className="register-status register-status--error">
@@ -137,9 +141,21 @@ export function RegisterForm() {
         <div className="register-result">
           <p className="register-result__eyebrow">로그인 코드</p>
           <p className="register-result__code">{result.code}</p>
+          <p className="register-result__warning">⚠️ 주의 ⚠️</p>
           <p className="register-result__note">
-            로그인 코드는 이 페이지를 나가면 다시 볼 수 없으니 꼭 다른 곳에 저장해 주세요.
+            이 페이지를 나가면 로그인 코드를 다시 볼 수 없습니다.
+            <br />
+            꼭 다른 곳에 기록해 두세요.
           </p>
+          <div className="register-result__actions">
+            <button
+              type="button"
+              className="register-submit register-result__login"
+              onClick={() => router.push("/")}
+            >
+              로그인하러 가기
+            </button>
+          </div>
         </div>
       ) : null}
     </form>
