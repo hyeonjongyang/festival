@@ -139,10 +139,66 @@
   color: var(--text-muted);
 }
 
+.register-result__code-row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  margin: 0.15rem 0;
+  padding: 0.08rem 0.35rem;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+      120deg,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0)
+    ),
+    rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--outline-strong);
+}
+
 .register-result__code {
   font-size: 2.2rem;
   letter-spacing: 0.3em;
   margin: 0.5rem 0;
+}
+
+.register-copy-button {
+  border: 1px solid var(--outline);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  padding: 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 140ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    background-color 180ms ease;
+}
+
+.register-copy-button:hover {
+  transform: translateY(-1px) scale(1.02);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.register-copy-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.register-copy-button--success {
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: #fff;
+  border-color: transparent;
+}
+
+.register-copy-button__icon {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 .register-result__warning {
