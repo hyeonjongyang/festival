@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest",
     "test:unit": "vitest run",
-    "test:integration": "vitest run src/app/api/**/*.test.ts",
+    "test:integration": "vitest run src/app/api",
     "test:prisma": "vitest run src/lib/prisma-schema.test.ts",
     "test:all": "npm run test:unit && npm run test:integration && npm run test:prisma",
     "audit:lighthouse": "mkdir -p docs/lighthouse && lighthouse http://localhost:3000 --only-categories=accessibility,best-practices,performance --output=html --output-path=./docs/lighthouse/mobile-report.html --quiet",
