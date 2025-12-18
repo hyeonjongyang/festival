@@ -2,9 +2,18 @@ import { requireRole } from "@/lib/auth/require-role";
 import { fetchBoothVisitsDashboard } from "@/lib/visits/dashboard";
 import { BoothAccessError } from "@/lib/visits/errors";
 import { BoothDashboard } from "@/components/booth/booth-dashboard";
+import { headers } from "next/headers";
 
 export default async function BoothVisitsPage() {
   const session = await requireRole(["BOOTH_MANAGER", "ADMIN"]);
+  const headerList = await headers();
+  const rawHost = headerList.get("x-forwarded-host") ?? headerList.get("host") ?? "";
+  const rawProto = headerList.get("x-forwarded-proto") ?? "";
+  const host = rawHost.split(",")[0]?.trim();
+  const proto = (rawProto.split(",")[0]?.trim() || (host?.includes("localhost") ? "http" : "https")) as
+    | "http"
+    | "https";
+  const origin = host ? `${proto}://${host}` : "";
 
   let dashboard = null;
   let missingBooth = false;
@@ -31,7 +40,7 @@ export default async function BoothVisitsPage() {
 
   return (
     <div className="space-y-6">
-      <BoothDashboard initial={dashboard} />
+      <BoothDashboard initial={dashboard} origin={origin} />
     </div>
   );
 }

@@ -54,6 +54,8 @@ function FeedPanelContent({ initialFeed, viewerRole, viewerId, booth, scannerCon
   const canCreatePost = viewerRole === "BOOTH_MANAGER";
   const isStudent = viewerRole === "STUDENT";
   const canScan = Boolean(isStudent && scannerControls);
+  const deepLinkSubmitToken = scannerControls?.submitToken;
+  const deepLinkLastTokenRef = useRef<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
   const [composerOpen, setComposerOpen] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -68,6 +70,35 @@ function FeedPanelContent({ initialFeed, viewerRole, viewerId, booth, scannerCon
     return () => window.cancelAnimationFrame(frame);
   }, []);
   const portalTarget = portalReady ? document.body : null;
+
+  useEffect(() => {
+    if (!canScan || !deepLinkSubmitToken) return;
+    let deepLinkValue: string | null = null;
+
+    try {
+      const url = new URL(window.location.href);
+      deepLinkValue = url.searchParams.get("boothToken") ?? url.searchParams.get("token") ?? url.searchParams.get("t");
+    } catch {
+      deepLinkValue = null;
+    }
+
+    if (!deepLinkValue) return;
+    const normalized = deepLinkValue.trim();
+    if (!normalized) return;
+    if (deepLinkLastTokenRef.current === normalized) return;
+    deepLinkLastTokenRef.current = normalized;
+
+    try {
+      const url = new URL(window.location.href);
+      ["boothToken", "token", "t"].forEach((key) => url.searchParams.delete(key));
+      const search = url.searchParams.toString();
+      window.history.replaceState({}, "", `${url.pathname}${search ? `?${search}` : ""}${url.hash}`);
+    } catch {
+      // ignore URL parsing failures
+    }
+
+    void deepLinkSubmitToken(normalized, { source: "qr" });
+  }, [canScan, deepLinkSubmitToken]);
 
   const getKey = (index: number, previous: FeedApiResponse | null) => {
     if (previous && !previous.feed.nextCursor) {

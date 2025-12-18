@@ -57,9 +57,9 @@ export function StudentDashboard({ initial, variant = "full" }: StudentDashboard
         <section className="p-5">
           <p className="text-sm font-semibold text-[var(--text-primary)]">방문 안내</p>
           <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-[var(--text-muted)]">
-            <li>피드 상단의 QR 스캐너 버튼을 눌러 부스 QR을 촬영하세요.</li>
+            <li>기본 카메라(또는 피드 상단의 QR 스캐너)로 부스 QR을 스캔하세요.</li>
             <li>같은 부스는 한 번만 방문할 수 있습니다.</li>
-            <li>카드가 인식되지 않을 경우 부스 토큰 문자열을 직접 입력할 수 있습니다.</li>
+            <li>QR 링크/토큰이 인식되지 않으면 문자열을 직접 입력할 수 있습니다.</li>
           </ul>
         </section>
       ) : null}

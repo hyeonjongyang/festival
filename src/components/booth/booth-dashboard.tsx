@@ -5,9 +5,11 @@ import QRCode from "react-qr-code";
 import type { BoothVisitsDashboard } from "@/types/api";
 import { useBoothDashboard } from "@/hooks/use-booth-dashboard";
 import { formatCompactDate } from "@/lib/client/time";
+import { createBoothVisitUrl } from "@/lib/visits/qr-payload";
 
 type BoothDashboardProps = {
   initial: BoothVisitsDashboard;
+  origin: string;
 };
 
 function maskStudentIdentifier(identifier: string) {
@@ -22,10 +24,18 @@ function maskStudentIdentifier(identifier: string) {
   return `${identifier.slice(0, -2)}**`;
 }
 
-export function BoothDashboard({ initial }: BoothDashboardProps) {
+export function BoothDashboard({ initial, origin }: BoothDashboardProps) {
   const { dashboard } = useBoothDashboard(initial);
   const [status, setStatus] = useState<string | null>(null);
   const qrContainerRef = useRef<HTMLDivElement | null>(null);
+  const boothToken = dashboard?.booth.qrToken ?? initial.booth.qrToken;
+  const qrValue = (() => {
+    try {
+      return createBoothVisitUrl(origin, boothToken) || boothToken;
+    } catch {
+      return boothToken;
+    }
+  })();
 
   if (!dashboard) {
     return (
@@ -104,7 +114,13 @@ export function BoothDashboard({ initial }: BoothDashboardProps) {
         </div>
         <div className="mt-4 flex flex-col items-center gap-4">
           <div ref={qrContainerRef} className="rounded-[18px] bg-white p-6 drop-shadow-[0_18px_32px_rgba(0,0,0,0.25)]">
-            <QRCode value={dashboard.booth.qrToken} size={320} bgColor="#ffffff" fgColor="#040915" level="H" />
+            <QRCode
+              value={qrValue}
+              size={320}
+              bgColor="#ffffff"
+              fgColor="#040915"
+              level="H"
+            />
           </div>
           <button
             type="button"

@@ -1,17 +1,19 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/components/session-context";
 
 const CODE_REGEX = /^[A-Z0-9]{5}$/;
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setSession } = useSession();
   const [code, setCode] = useState("");
   const [invalid, setInvalid] = useState(false);
   const [pending, setPending] = useState(false);
+  const nextPath = getSafeNextPath(searchParams.get("next"));
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -43,7 +45,7 @@ export function LoginForm() {
         setSession(json.user);
       }
 
-      router.push("/feed");
+      router.push(nextPath ?? "/feed");
     } catch (loginError) {
       console.error(loginError);
       setInvalid(true);
@@ -90,4 +92,11 @@ export function LoginForm() {
       </div>
     </div>
   );
+}
+
+function getSafeNextPath(nextValue: string | null) {
+  if (!nextValue) return null;
+  if (!nextValue.startsWith("/")) return null;
+  if (nextValue.startsWith("//")) return null;
+  return nextValue;
 }

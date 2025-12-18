@@ -7,6 +7,7 @@ import { jsonFetch, HttpError } from "@/lib/client/http";
 import { formatCompactDate } from "@/lib/client/time";
 import type { RecordVisitResult } from "@/types/api";
 import { StarSelector } from "@/components/chrome/star-selector";
+import { extractBoothTokenFromQrPayload } from "@/lib/visits/qr-payload";
 
 type VisitScannerProps = {
   onRecorded?: (result: RecordVisitResult) => void;
@@ -54,8 +55,9 @@ export function VisitScannerController({ onRecorded, children }: VisitScannerCon
   const submitToken = useCallback(
     async (token: string, options: { source: "qr" | "manual" } = { source: "manual" }) => {
       const trimmed = token.trim();
+      const boothToken = extractBoothTokenFromQrPayload(trimmed);
 
-      if (!trimmed) {
+      if (!boothToken) {
         setStatus({ tone: "error", message: "QR 토큰을 입력해주세요." });
         return;
       }
@@ -65,7 +67,7 @@ export function VisitScannerController({ onRecorded, children }: VisitScannerCon
       try {
         const payload = await jsonFetch<RecordVisitResult>("/api/visits/record", {
           method: "POST",
-          body: JSON.stringify({ boothToken: trimmed }),
+          body: JSON.stringify({ boothToken }),
         });
 
         if (options.source === "qr" && payload.ratingStatus.hasRated) {

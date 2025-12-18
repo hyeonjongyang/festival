@@ -4,11 +4,19 @@ import { fetchFeedPage } from "@/lib/posts/feed";
 import { FeedPanel } from "@/components/feed/feed-panel";
 import { prisma } from "@/lib/prisma";
 
-export default async function FeedPage() {
+type FeedPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function FeedPage({ searchParams }: FeedPageProps) {
+  const resolvedSearchParams = await searchParams;
+  const searchString = buildSearchString(resolvedSearchParams);
+  const nextPath = searchString ? `/feed?${searchString}` : "/feed";
+
   const session = await getSessionUser();
 
   if (!session) {
-    redirect("/");
+    redirect(`/?next=${encodeURIComponent(nextPath)}`);
   }
 
   const feed = await fetchFeedPage();
@@ -22,7 +30,29 @@ export default async function FeedPage() {
 
   return (
     <div className="space-y-6">
-      <FeedPanel initialFeed={feed} viewerRole={session.role} viewerId={session.id} booth={booth} />
+      <FeedPanel
+        initialFeed={feed}
+        viewerRole={session.role}
+        viewerId={session.id}
+        booth={booth}
+      />
     </div>
   );
+}
+
+function buildSearchString(params: Record<string, string | string[] | undefined>) {
+  const search = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (typeof value === "string") {
+      search.set(key, value);
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach((entry) => search.append(key, entry));
+    }
+  });
+
+  return search.toString();
 }
