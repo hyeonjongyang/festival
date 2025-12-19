@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "cross-env WATCHPACK_POLLING=true next dev",
+    "prebuild": "prisma generate",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
