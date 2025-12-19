@@ -20,7 +20,7 @@ const body = IBM_Plex_Sans_KR({
 });
 
 export const metadata: Metadata = {
-  title: "Festival Connect",
+  title: "종촌고등학교 부스 한마당",
   description: "학생 · 부스 · 운영팀을 위한 모바일 축제 운영 허브",
 };
 

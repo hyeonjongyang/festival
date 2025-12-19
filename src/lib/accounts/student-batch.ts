@@ -230,7 +230,7 @@ async function writeStudentWorkbook(
   batchId: string,
 ) {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "Festival Connect";
+  workbook.creator = "종촌고등학교 부스 한마당";
   workbook.created = new Date();
 
   const gradeGroups = groupStudentsByGrade(students);

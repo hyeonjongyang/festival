@@ -4,7 +4,7 @@ import { RegisterForm } from "@/components/register/register-form";
 import "./register.css";
 
 export const metadata: Metadata = {
-  title: "부스 등록 | Festival Connect",
+  title: "부스 등록 | 종촌고등학교 부스 한마당",
 };
 
 export default async function BoothRegisterPage() {

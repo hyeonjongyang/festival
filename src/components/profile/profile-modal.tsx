@@ -62,7 +62,7 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
       >
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">Festival Connect</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">종촌고등학교 부스 한마당</p>
             <h2 className="mt-1 text-2xl font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
               {displayName}
             </h2>
