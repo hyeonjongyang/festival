@@ -135,3 +135,16 @@ model BoothRating {
 
   @@unique([boothId, studentId])
 }
+
+model AdminDbSnapshot {
+  id          String   @id @default(cuid())
+  tableKey    String
+  action      String
+  note        String?
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  recordCount Int
+  data        Json
+
+  @@index([tableKey, createdAt])
+}

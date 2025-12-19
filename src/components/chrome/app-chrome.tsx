@@ -34,6 +34,7 @@ const ROLE_NAV: Partial<Record<UserRole, NavItem[]>> = {
     { href: "/feed", label: "피드" },
     { href: "/admin/dashboard", label: "운영 현황" },
     { href: "/admin/accounts", label: "계정 허브" },
+    { href: "/admin/db", label: "DB 관리" },
   ],
 };
 
@@ -43,6 +44,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
   const chromeRef = useRef<HTMLDivElement>(null);
   const navCardRef = useRef<HTMLDivElement>(null);
   const minimalChrome = !session && pathname === "/";
+  const wideLayout = pathname.startsWith("/admin/db");
   const showBoothProfile = session?.role === "BOOTH_MANAGER";
 
   const navItems = useMemo(() => {
@@ -118,10 +120,13 @@ export function AppChrome({ children }: { children: ReactNode }) {
   }, [pathname, navItems]);
 
   return (
-    <div className="app-shell" ref={chromeRef}>
+    <div className={cn("app-shell", wideLayout && "app-shell--wide")} ref={chromeRef}>
       {showBoothProfile ? <BoothProfileButton /> : null}
-      <div className="app-shell__chrome">
-        <main id="main-content" className={cn("min-h-[60vh]", minimalChrome ? "p-0" : "px-4 py-5")}>
+      <div className={cn("app-shell__chrome", wideLayout && "app-shell__chrome--wide")}>
+        <main
+          id="main-content"
+          className={cn("min-h-[60vh]", minimalChrome ? "p-0" : wideLayout ? "p-0" : "px-4 py-5")}
+        >
           {children}
         </main>
       </div>

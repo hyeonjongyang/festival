@@ -114,6 +114,18 @@ textarea {
   gap: 18px;
 }
 
+.app-shell--wide {
+  align-items: stretch;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 0;
+}
+
+.app-shell__chrome--wide {
+  width: 100%;
+  max-width: none;
+}
+
 .glass-card {
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -138,6 +150,10 @@ textarea {
 
 .soft-scrollbar::-webkit-scrollbar-track {
   background: transparent;
+}
+
+.db-sheet-scroll {
+  overflow-anchor: none;
 }
 
 .chip {

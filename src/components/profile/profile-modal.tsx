@@ -172,6 +172,9 @@ function AdminQuickLinks() {
         <Link href="/admin/accounts" className="rounded-2xl border border-[var(--outline)] px-4 py-2 text-[var(--text-primary)]">
           계정 허브
         </Link>
+        <Link href="/admin/db" className="rounded-2xl border border-[var(--outline)] px-4 py-2 text-[var(--text-primary)]">
+          DB 관리
+        </Link>
       </div>
     </div>
   );
