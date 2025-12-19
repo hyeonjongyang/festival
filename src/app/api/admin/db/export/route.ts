@@ -37,9 +37,10 @@ export async function GET(request: NextRequest) {
     buildDbOrderBy(config, sortField, sortDir) ??
     ({ [config.defaultSort.key]: config.defaultSort.dir } as Record<string, "asc" | "desc">);
 
-  const model = (prisma as Record<string, { findMany: (args: unknown) => Promise<Record<string, unknown>[]> }>)[
-    config.model
-  ];
+  const model = (prisma as unknown as Record<
+    string,
+    { findMany: (args: unknown) => Promise<Record<string, unknown>[]> }
+  >)[config.model];
 
   const rows = await model.findMany({
     where,

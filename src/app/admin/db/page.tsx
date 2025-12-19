@@ -49,9 +49,10 @@ export default async function AdminDbPage({ searchParams }: AdminDbPageProps) {
     buildDbOrderBy(tableConfig, sortField, sortDir) ??
     ({ [tableConfig.defaultSort.key]: tableConfig.defaultSort.dir } as Record<string, "asc" | "desc">);
 
-  const rowsPromise = (prisma as Record<string, { findMany: (args: unknown) => Promise<Record<string, unknown>[]> }>)[
-    tableConfig.model
-  ].findMany({
+  const rowsPromise = (prisma as unknown as Record<
+    string,
+    { findMany: (args: unknown) => Promise<Record<string, unknown>[]> }
+  >)[tableConfig.model].findMany({
     where,
     orderBy,
     take: limit,
@@ -86,9 +87,8 @@ export default async function AdminDbPage({ searchParams }: AdminDbPageProps) {
   const sortOptions = tableConfig.columns.filter((column) => column.sortable !== false);
   const activeFilterField = filterOptions.some((column) => column.key === filterField) ? filterField : "";
   const effectiveFilterValue = activeFilterField ? filterValue : null;
-  const activeSortField = sortOptions.some((column) => column.key === sortField)
-    ? sortField
-    : tableConfig.defaultSort.key;
+  const activeSortField =
+    sortOptions.find((column) => column.key === sortField)?.key ?? tableConfig.defaultSort.key;
   const activeSortDir = sortDir === "desc" ? "desc" : "asc";
   const exportBaseParams = buildSearchParams({
     table: tableConfig.key,

@@ -38,7 +38,9 @@ export async function createDbRecord(_: DbActionResult, formData: FormData) {
       return snapshotError;
     }
 
-    const model = (prisma as Record<string, { create: (args: unknown) => Promise<unknown> }>)[config.model];
+    const model = (prisma as unknown as Record<string, { create: (args: unknown) => Promise<unknown> }>)[
+      config.model
+    ];
     const data = coerceDateFields(config, parsed.data);
     const created = await model.create({ data });
     revalidatePath("/admin/db");
@@ -84,7 +86,9 @@ export async function updateDbRecord(_: DbActionResult, formData: FormData) {
       return snapshotError;
     }
 
-    const model = (prisma as Record<string, { update: (args: unknown) => Promise<unknown> }>)[config.model];
+    const model = (prisma as unknown as Record<string, { update: (args: unknown) => Promise<unknown> }>)[
+      config.model
+    ];
     const data = coerceDateFields(config, parsed.data);
     const updated = await model.update({
       where: { [config.idField]: recordId.value },
@@ -128,7 +132,9 @@ export async function deleteDbRecord(_: DbActionResult, formData: FormData) {
       return snapshotError;
     }
 
-    const model = (prisma as Record<string, { delete: (args: unknown) => Promise<unknown> }>)[config.model];
+    const model = (prisma as unknown as Record<string, { delete: (args: unknown) => Promise<unknown> }>)[
+      config.model
+    ];
     await model.delete({ where: { [config.idField]: recordId.value } });
     revalidatePath("/admin/db");
     return {
@@ -172,7 +178,7 @@ export async function bulkDeleteTable(_: DbActionResult, formData: FormData) {
       return snapshotError;
     }
 
-    const model = (prisma as Record<string, { deleteMany: (args?: unknown) => Promise<{ count: number }> }>)[
+    const model = (prisma as unknown as Record<string, { deleteMany: (args?: unknown) => Promise<{ count: number }> }>)[
       config.model
     ];
     const result = await model.deleteMany();
@@ -273,9 +279,11 @@ export async function restoreDbSnapshot(_: DbActionResult, formData: FormData) {
       return snapshotError;
     }
 
-    const model = (prisma as Record<string, { deleteMany: () => Promise<unknown>; createMany: (args: unknown) => Promise<unknown> }>)[
-      config.model
-    ];
+    const model =
+      (prisma as unknown as Record<
+        string,
+        { deleteMany: () => Promise<unknown>; createMany: (args: unknown) => Promise<unknown> }
+      >)[config.model];
 
     const rows = snapshot.data.map((row) => coerceDateFields(config, { ...(row as Record<string, unknown>) }));
 

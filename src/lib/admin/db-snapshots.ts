@@ -24,9 +24,10 @@ export async function captureTableSnapshot({ tableKey, action, createdBy, note }
     throw new Error("테이블이 올바르지 않습니다.");
   }
 
-  const model = (prisma as Record<string, { findMany: (args: unknown) => Promise<Record<string, unknown>[]> }>)[
-    config.model
-  ];
+  const model = (prisma as unknown as Record<
+    string,
+    { findMany: (args: unknown) => Promise<Record<string, unknown>[]> }
+  >)[config.model];
   const rows = await model.findMany({ select: buildDbSelect(config) });
   const data = JSON.parse(JSON.stringify(rows));
   const trimmedNote = note?.trim();

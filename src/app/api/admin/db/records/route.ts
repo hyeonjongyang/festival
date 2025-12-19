@@ -64,9 +64,10 @@ export async function PATCH(request: NextRequest) {
       });
     }
 
-    const model = (prisma as Record<string, { update: (args: unknown) => Promise<Record<string, unknown>> }>)[
-      config.model
-    ];
+    const model = (prisma as unknown as Record<
+      string,
+      { update: (args: unknown) => Promise<Record<string, unknown>> }
+    >)[config.model];
 
     const updated = await model.update({
       where: { [config.idField]: recordId },
