@@ -6,13 +6,14 @@ import type { UserRole } from "@prisma/client";
 import { jsonFetch } from "@/lib/client/http";
 import { cn } from "@/lib/client/cn";
 import { formatCompactDate, formatRelativeTime } from "@/lib/client/time";
-import type { FeedPage } from "@/types/api";
+import type { FeedPage, TrendingBoothResult } from "@/types/api";
 import { useEffect, useMemo, useRef, useState, useId } from "react";
 import { createPortal } from "react-dom";
 import type { SVGProps } from "react";
 import { StarGlyph } from "@/components/chrome/star-meter";
 import { BoothPostComposer } from "@/components/booth/booth-post-composer";
 import { VisitScannerController, type VisitScannerControllerRenderProps } from "@/components/scan/visit-scanner";
+import { RealtimeHotBooths } from "@/components/feed/realtime-hot-booths";
 
 type FeedApiResponse = {
   feed: FeedPage;
@@ -26,6 +27,7 @@ type BoothSummary = {
 
 type FeedPanelProps = {
   initialFeed: FeedPage;
+  initialTrending: TrendingBoothResult;
   viewerRole: UserRole;
   viewerId: string;
   booth: BoothSummary | null;
@@ -49,7 +51,14 @@ export function FeedPanel(props: FeedPanelProps) {
   return <FeedPanelContent {...props} />;
 }
 
-function FeedPanelContent({ initialFeed, viewerRole, viewerId, booth, scannerControls }: FeedPanelContentProps) {
+function FeedPanelContent({
+  initialFeed,
+  initialTrending,
+  viewerRole,
+  viewerId,
+  booth,
+  scannerControls,
+}: FeedPanelContentProps) {
   const isAdmin = viewerRole === "ADMIN";
   const canCreatePost = viewerRole === "BOOTH_MANAGER";
   const isStudent = viewerRole === "STUDENT";
@@ -229,7 +238,9 @@ function FeedPanelContent({ initialFeed, viewerRole, viewerId, booth, scannerCon
 
   return (
     <>
-      <section className="space-y-4">
+      <RealtimeHotBooths initial={initialTrending} />
+
+      <section className="space-y-4 pt-24 sm:pt-28">
         {banner ? (
           <p className="rounded-2xl border border-[var(--danger)]/40 px-4 py-3 text-sm text-[var(--danger)]">{banner}</p>
         ) : null}

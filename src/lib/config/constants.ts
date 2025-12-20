@@ -5,6 +5,11 @@ export const FEED_PAGE_MAX_SIZE = 24;
 export const POST_BODY_MAX_LENGTH = 500;
 export const POST_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
+export const TRENDING_WINDOW_MINUTES = 10;
+export const TRENDING_MAX_ENTRIES = 3;
+export const TRENDING_RATING_WEIGHT = 0.3;
+export const TRENDING_RATING_SMOOTHING_WEIGHT = 3;
+
 export const ADMIN_ACTIVE_BOOTH_WINDOW_HOURS = 24;
 export const ADMIN_RECENT_POST_LIMIT = 6;
 export const ADMIN_RECENT_VISIT_LOG_LIMIT = 10;

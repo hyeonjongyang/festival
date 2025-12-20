@@ -3,6 +3,7 @@ export type { StudentDashboardData, StudentVisitLogItem } from "@/lib/students/d
 export type { BoothVisitsDashboard } from "@/lib/visits/dashboard";
 export type { BoothVisitLogItem } from "@/lib/visits/logs";
 export type { BoothLeaderboardResult, BoothLeaderboardEntry } from "@/lib/leaderboard";
+export type { TrendingBoothResult, TrendingBoothEntry } from "@/lib/leaderboard/trending";
 export type { AdminDashboardData, AdminRecentPost, AdminRecentVisitLog, AdminWarning } from "@/lib/admin/dashboard";
 export type { AccountBatchPayload } from "@/lib/accounts/types";
 export type { RecordVisitResult } from "@/lib/visits/record";

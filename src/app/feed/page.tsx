@@ -3,6 +3,8 @@ import { getSessionUser } from "@/lib/auth/get-session-user";
 import { fetchFeedPage } from "@/lib/posts/feed";
 import { FeedPanel } from "@/components/feed/feed-panel";
 import { prisma } from "@/lib/prisma";
+import { fetchTrendingBooths, type TrendingBoothResult } from "@/lib/leaderboard/trending";
+import { TRENDING_WINDOW_MINUTES } from "@/lib/config/constants";
 
 type FeedPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -19,19 +21,31 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
     redirect(`/?next=${encodeURIComponent(nextPath)}`);
   }
 
-  const feed = await fetchFeedPage();
-  const booth =
+  const feedPromise = fetchFeedPage();
+  const trendingPromise = fetchTrendingBooths().catch((error) => {
+    console.error("Failed to fetch trending booths for feed page.", error);
+    const fallback: TrendingBoothResult = {
+      generatedAt: new Date().toISOString(),
+      windowMinutes: TRENDING_WINDOW_MINUTES,
+      entries: [],
+      source: "recent",
+    };
+    return fallback;
+  });
+  const boothPromise =
     session.role === "BOOTH_MANAGER"
-      ? await prisma.booth.findUnique({
+      ? prisma.booth.findUnique({
           where: { ownerId: session.id },
           select: { name: true, location: true, description: true },
         })
-      : null;
+      : Promise.resolve(null);
+  const [feed, trending, booth] = await Promise.all([feedPromise, trendingPromise, boothPromise]);
 
   return (
     <div className="space-y-6">
       <FeedPanel
         initialFeed={feed}
+        initialTrending={trending}
         viewerRole={session.role}
         viewerId={session.id}
         booth={booth}
