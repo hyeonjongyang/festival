@@ -279,16 +279,15 @@ export async function restoreDbSnapshot(_: DbActionResult, formData: FormData) {
       return snapshotError;
     }
 
-    const model =
-      (prisma as unknown as Record<
-        string,
-        { deleteMany: () => Promise<unknown>; createMany: (args: unknown) => Promise<unknown> }
-      >)[config.model];
-
     const rows = snapshot.data.map((row) => coerceDateFields(config, { ...(row as Record<string, unknown>) }));
 
+    type RestoreModel = {
+      deleteMany: () => Promise<unknown>;
+      createMany: (args: unknown) => Promise<unknown>;
+    };
+
     await prisma.$transaction(async (tx) => {
-      const txModel = (tx as typeof prisma)[config.model as keyof typeof prisma] as typeof model;
+      const txModel = (tx as unknown as Record<string, RestoreModel>)[config.model];
       await clearDependentRowsForRestore(tx, config.key);
       await txModel.deleteMany();
       if (rows.length > 0) {

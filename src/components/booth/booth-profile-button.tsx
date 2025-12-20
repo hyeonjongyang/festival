@@ -68,7 +68,7 @@ export function BoothProfileButton() {
       location: booth.location ?? "",
       description: booth.description ?? "",
     });
-  }, [booth?.name, booth?.location, booth?.description, open]);
+  }, [booth, open]);
 
   useEffect(() => {
     if (open) {

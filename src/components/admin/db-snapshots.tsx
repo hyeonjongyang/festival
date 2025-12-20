@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useActionState, useMemo, useState, type FormEvent } from "react";
 import type { DbActionResult } from "@/app/admin/db/actions";
 import { dbActionInitialState, restoreDbSnapshot } from "@/app/admin/db/actions";
 import type { DbTableKey } from "@/lib/admin/db-config";
@@ -30,12 +30,7 @@ export function DbSnapshots({ tableKey, snapshots }: { tableKey: DbTableKey; sna
     { ...dbActionInitialState },
   );
   const [pendingSnapshotId, setPendingSnapshotId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!restorePending) {
-      setPendingSnapshotId(null);
-    }
-  }, [restorePending]);
+  const activePendingSnapshotId = restorePending ? pendingSnapshotId : null;
 
   const snapshotCountLabel = useMemo(() => `${snapshots.length.toLocaleString()}개`, [snapshots.length]);
 
@@ -70,7 +65,7 @@ export function DbSnapshots({ tableKey, snapshots }: { tableKey: DbTableKey; sna
             const actionLabel = ACTION_LABELS[snapshot.action] ?? snapshot.action;
             const createdBy = snapshot.createdBy ? ` · ${snapshot.createdBy}` : "";
             const createdAt = formatTimestamp(snapshot.createdAt);
-            const isPending = restorePending && pendingSnapshotId === snapshot.id;
+            const isPending = activePendingSnapshotId === snapshot.id;
 
             return (
               <div
