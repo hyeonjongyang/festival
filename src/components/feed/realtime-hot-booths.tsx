@@ -46,7 +46,7 @@ export function RealtimeHotBooths({ initial }: RealtimeHotBoothsProps) {
   const entries = trending.entries;
   const windowLabel = `${trending.windowMinutes}분`;
   const isHistory = trending.source === "history";
-  const basisLabel = isHistory ? "이전 기록" : `${windowLabel} 기준`;
+  const basisLabel = isHistory ? "" : `${windowLabel} 기준`;
   const emptyMessage = isHistory
     ? "방문 기록이 아직 없습니다."
     : `최근 ${windowLabel} 방문 기록이 없습니다.`;
@@ -65,18 +65,15 @@ export function RealtimeHotBooths({ initial }: RealtimeHotBoothsProps) {
             expanded && "shadow-[0_30px_80px_rgba(0,0,0,0.45)]",
           )}
         >
-          <span
+          <div
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 z-0 h-28 bg-[radial-gradient(120%_140%_at_50%_0%,_rgba(255,120,120,0.22),_transparent_72%)]"
-          />
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -left-12 -top-14 z-0 h-36 w-36 rounded-full bg-[rgba(255,140,140,0.18)] blur-[80px]"
-          />
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -right-12 -top-12 z-0 h-36 w-36 rounded-full bg-[rgba(255,140,140,0.18)] blur-[80px]"
-          />
+            className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-[inherit]"
+            style={{ clipPath: "inset(0 round var(--radius-lg))" }}
+          >
+            <span className="absolute inset-x-0 top-0 h-28 bg-[radial-gradient(120%_140%_at_50%_0%,_rgba(255,120,120,0.22),_transparent_72%)]" />
+            <span className="absolute -left-12 -top-14 h-36 w-36 rounded-full bg-[rgba(255,140,140,0.18)] blur-[80px]" />
+            <span className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[rgba(255,140,140,0.18)] blur-[80px]" />
+          </div>
 
           <button
             type="button"
@@ -92,7 +89,7 @@ export function RealtimeHotBooths({ initial }: RealtimeHotBoothsProps) {
                 </p>
               </div>
               <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
-                <span>{basisLabel}</span>
+                {basisLabel ? <span>{basisLabel}</span> : null}
                 {error ? "업데이트 실패" : null}
                 <ChevronIcon
                   className={cn(
@@ -120,7 +117,7 @@ export function RealtimeHotBooths({ initial }: RealtimeHotBoothsProps) {
                       className="inline-flex items-center gap-2 rounded-full border border-[var(--outline)] bg-[var(--surface-muted)] px-3 py-1 text-[var(--text-primary)]"
                     >
                       <span className="text-[10px] text-[var(--text-muted)]">#{entry.rank}</span>
-                      <span className="font-semibold">{entry.boothName}</span>
+                      <span className="text-[11px] font-semibold">{entry.boothName}</span>
                       {entry.ratingAverage !== null && entry.ratingCount > 0 ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--text-primary)]">
                           <span style={{ color: "var(--rating-star, #fadb4a)" }}>
