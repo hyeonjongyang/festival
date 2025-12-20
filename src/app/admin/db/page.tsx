@@ -28,6 +28,7 @@ const COUNT_KEY_ORDER: DbTableKey[] = [
   "boothRatings",
 ];
 const SNAPSHOT_LIMIT = 20;
+const INITIAL_PAGE_SIZE = 120;
 
 export default async function AdminDbPage({ searchParams }: AdminDbPageProps) {
   await requireRole(["ADMIN"]);
@@ -38,11 +39,9 @@ export default async function AdminDbPage({ searchParams }: AdminDbPageProps) {
   const filterValue = normalizeParam(resolvedSearchParams.filterValue);
   const sortField = normalizeParam(resolvedSearchParams.sortField);
   const sortDir = normalizeParam(resolvedSearchParams.sortDir);
-  const limitParam = normalizeParam(resolvedSearchParams.limit);
   const activeId = normalizeParam(resolvedSearchParams.activeId);
 
   const tableConfig = getDbTableConfig(tableKey);
-  const limit = parseLimit(limitParam);
 
   const where = buildDbWhere(tableConfig, filterField, filterValue) ?? undefined;
   const orderBy =
@@ -55,7 +54,7 @@ export default async function AdminDbPage({ searchParams }: AdminDbPageProps) {
   >)[tableConfig.model].findMany({
     where,
     orderBy,
-    take: limit,
+    take: INITIAL_PAGE_SIZE + 1,
     select: buildDbSelect(tableConfig),
   });
 
@@ -76,7 +75,9 @@ export default async function AdminDbPage({ searchParams }: AdminDbPageProps) {
     take: SNAPSHOT_LIMIT,
   });
 
-  const [countResults, rows, snapshots] = await Promise.all([countsPromise, rowsPromise, snapshotsPromise]);
+  const [countResults, rawRows, snapshots] = await Promise.all([countsPromise, rowsPromise, snapshotsPromise]);
+  const hasMore = rawRows.length > INITIAL_PAGE_SIZE;
+  const rows = hasMore ? rawRows.slice(0, INITIAL_PAGE_SIZE) : rawRows;
 
   const countMap = COUNT_KEY_ORDER.reduce<Record<DbTableKey, number>>((acc, key, index) => {
     acc[key] = countResults[index] ?? 0;
@@ -101,8 +102,10 @@ export default async function AdminDbPage({ searchParams }: AdminDbPageProps) {
     table: tableConfig.key,
     filterField: activeFilterField,
     filterValue: effectiveFilterValue,
-    limit: String(limit),
+    sortField: activeSortField,
+    sortDir: activeSortDir,
   };
+  const totalCount = effectiveFilterValue ? undefined : countMap[tableConfig.key];
   const snapshotItems = snapshots.map((snapshot) => ({
     id: snapshot.id,
     action: snapshot.action,
@@ -208,19 +211,6 @@ export default async function AdminDbPage({ searchParams }: AdminDbPageProps) {
               <option value="desc">내림차순 (Z → A)</option>
             </select>
           </label>
-          <label className="flex flex-col gap-1">
-            표시 개수
-            <select
-              name="limit"
-              defaultValue={String(limit)}
-              className="rounded-2xl border border-[var(--outline)] bg-[var(--surface-muted)] px-3 py-2"
-            >
-              <option value="20">20</option>
-              <option value="40">40</option>
-              <option value="80">80</option>
-              <option value="120">120</option>
-            </select>
-          </label>
           <button
             type="submit"
             className="rounded-2xl bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]"
@@ -241,6 +231,9 @@ export default async function AdminDbPage({ searchParams }: AdminDbPageProps) {
         idField={tableConfig.idField}
         columns={tableConfig.columns}
         initialRows={rows}
+        initialHasMore={hasMore}
+        pageSize={INITIAL_PAGE_SIZE}
+        totalCount={totalCount}
         activeId={activeId}
         sortField={activeSortField}
         sortDir={activeSortDir}
@@ -273,15 +266,6 @@ export default async function AdminDbPage({ searchParams }: AdminDbPageProps) {
       </details>
     </div>
   );
-}
-
-function parseLimit(value: string | null) {
-  const parsed = value ? Number(value) : NaN;
-  const allowed = new Set([20, 40, 80, 120]);
-  if (Number.isFinite(parsed) && allowed.has(parsed)) {
-    return parsed;
-  }
-  return 40;
 }
 
 function buildSearchParams(params: Record<string, string | null | undefined>) {

@@ -1,7 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth/get-session-user";
-import { buildDbSelect, findDbTableConfig, type DbColumn } from "@/lib/admin/db-config";
+import {
+  buildDbOrderBy,
+  buildDbSelect,
+  buildDbWhere,
+  findDbTableConfig,
+  type DbColumn,
+} from "@/lib/admin/db-config";
 import { captureTableSnapshot } from "@/lib/admin/db-snapshots";
 
 type UpdatePayload = {
@@ -11,6 +17,55 @@ type UpdatePayload = {
   value?: string;
   skipSnapshot?: boolean;
 };
+
+export async function GET(request: NextRequest) {
+  const session = await getSessionUser();
+
+  if (!session || session.role !== "ADMIN") {
+    return NextResponse.json({ message: "권한이 없습니다." }, { status: 403 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const tableKey = normalizeParam(searchParams.get("table"));
+  const filterField = normalizeParam(searchParams.get("filterField"));
+  const filterValue = normalizeParam(searchParams.get("filterValue"));
+  const sortField = normalizeParam(searchParams.get("sortField"));
+  const sortDir = normalizeParam(searchParams.get("sortDir"));
+  const offset = parseOffset(searchParams.get("offset"));
+  const limit = parseLimit(searchParams.get("limit"));
+
+  if (!tableKey) {
+    return NextResponse.json({ message: "테이블 정보가 필요합니다." }, { status: 400 });
+  }
+
+  const config = findDbTableConfig(tableKey);
+  if (!config) {
+    return NextResponse.json({ message: "테이블이 올바르지 않습니다." }, { status: 400 });
+  }
+
+  const where = buildDbWhere(config, filterField, filterValue) ?? undefined;
+  const orderBy =
+    buildDbOrderBy(config, sortField, sortDir) ??
+    ({ [config.defaultSort.key]: config.defaultSort.dir } as Record<string, "asc" | "desc">);
+
+  const model = (prisma as unknown as Record<
+    string,
+    { findMany: (args: unknown) => Promise<Record<string, unknown>[]> }
+  >)[config.model];
+
+  const rows = await model.findMany({
+    where,
+    orderBy,
+    skip: offset,
+    take: limit + 1,
+    select: buildDbSelect(config),
+  });
+
+  const hasMore = rows.length > limit;
+  const sliced = hasMore ? rows.slice(0, limit) : rows;
+
+  return NextResponse.json({ rows: sliced, hasMore });
+}
 
 export async function PATCH(request: NextRequest) {
   const session = await getSessionUser();
@@ -127,4 +182,28 @@ function parseCellValue(value: string, column: DbColumn) {
     default:
       return value;
   }
+}
+
+function parseLimit(value: string | null) {
+  const parsed = value ? Number(value) : NaN;
+  if (!Number.isFinite(parsed)) {
+    return 120;
+  }
+  return Math.min(Math.max(Math.floor(parsed), 10), 200);
+}
+
+function parseOffset(value: string | null) {
+  const parsed = value ? Number(value) : NaN;
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return 0;
+  }
+  return Math.floor(parsed);
+}
+
+function normalizeParam(value: string | null) {
+  if (!value) {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }

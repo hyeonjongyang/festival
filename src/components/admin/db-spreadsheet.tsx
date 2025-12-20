@@ -12,6 +12,9 @@ type DbSpreadsheetProps = {
   idField: string;
   columns: DbColumn[];
   initialRows: Record<string, unknown>[];
+  initialHasMore: boolean;
+  pageSize: number;
+  totalCount?: number;
   activeId?: string | null;
   sortField: string;
   sortDir: "asc" | "desc";
@@ -28,6 +31,9 @@ export function DbSpreadsheet({
   idField,
   columns,
   initialRows,
+  initialHasMore,
+  pageSize,
+  totalCount,
   activeId,
   sortField,
   sortDir,
@@ -38,19 +44,28 @@ export function DbSpreadsheet({
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [pendingCell, setPendingCell] = useState<string | null>(null);
   const [isApplying, setIsApplying] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [status, setStatus] = useState<{ tone: "idle" | "saving" | "success" | "error"; message: string }>(
     { tone: "idle", message: "" },
   );
   const [activeCell, setActiveCell] = useState<string | null>(null);
+  const tableVersionRef = useRef(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    tableVersionRef.current += 1;
     setRows(initialRows);
     setDrafts((prev) => pruneDrafts(prev, initialRows, idField));
     setPendingCell(null);
     setActiveCell(null);
+    setHasMore(initialHasMore);
+    setIsLoadingMore(false);
+    setLoadError(null);
     setStatus({ tone: "idle", message: "" });
-  }, [initialRows, tableKey, idField]);
+  }, [initialRows, tableKey, idField, initialHasMore]);
 
   useLayoutEffect(() => {
     if (scrollRef.current) {
@@ -75,6 +90,19 @@ export function DbSpreadsheet({
     });
     return params;
   }, [queryParams]);
+
+  const buildRecordsParams = useCallback(
+    (offset: number) => {
+      const params = new URLSearchParams(baseParams);
+      params.set("table", tableKey);
+      params.set("sortField", sortField);
+      params.set("sortDir", sortDir);
+      params.set("offset", String(offset));
+      params.set("limit", String(pageSize));
+      return params;
+    },
+    [baseParams, pageSize, sortDir, sortField, tableKey],
+  );
 
   const getSortHref = (columnKey: string, sortable: boolean) => {
     if (!sortable) {
@@ -154,6 +182,60 @@ export function DbSpreadsheet({
     setStatus({ tone: "idle", message: "변경 사항을 되돌렸습니다." });
     setPendingCell(null);
   }, []);
+
+  const appendRows = useCallback(
+    (nextRows: Record<string, unknown>[]) => {
+      if (nextRows.length === 0) {
+        return;
+      }
+      setRows((prev) => {
+        const existing = new Set(prev.map((row) => String(row[idField] ?? "")));
+        const appended = nextRows.filter((row) => {
+          const key = String(row[idField] ?? "");
+          if (!key) {
+            return true;
+          }
+          if (existing.has(key)) {
+            return false;
+          }
+          existing.add(key);
+          return true;
+        });
+        return appended.length > 0 ? [...prev, ...appended] : prev;
+      });
+    },
+    [idField],
+  );
+
+  const loadMoreRows = useCallback(async () => {
+    if (isLoadingMore || !hasMore) {
+      return;
+    }
+    const version = tableVersionRef.current;
+    setIsLoadingMore(true);
+    setLoadError(null);
+
+    try {
+      const params = buildRecordsParams(rows.length);
+      const response = await jsonFetch<{ rows: Record<string, unknown>[]; hasMore: boolean }>(
+        `/api/admin/db/records?${params.toString()}`,
+      );
+      if (tableVersionRef.current !== version) {
+        return;
+      }
+      appendRows(response.rows);
+      setHasMore(response.hasMore);
+    } catch (error) {
+      if (tableVersionRef.current !== version) {
+        return;
+      }
+      setLoadError(error instanceof Error ? error.message : "추가 데이터를 불러오지 못했습니다.");
+    } finally {
+      if (tableVersionRef.current === version) {
+        setIsLoadingMore(false);
+      }
+    }
+  }, [appendRows, buildRecordsParams, hasMore, isLoadingMore, rows.length]);
 
   const applyChanges = useCallback(async () => {
     if (isApplying) {
@@ -281,11 +363,36 @@ export function DbSpreadsheet({
     return () => window.removeEventListener("keydown", handleGlobalKey);
   }, [applyChanges, discardChanges]);
 
+  useEffect(() => {
+    const root = scrollRef.current;
+    const target = loadMoreRef.current;
+    if (!root || !target) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          void loadMoreRows();
+        }
+      },
+      { root, rootMargin: "240px 0px 360px 0px" },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [loadMoreRows]);
+
+  const rowCountLabel =
+    typeof totalCount === "number"
+      ? `${rows.length.toLocaleString()} / ${totalCount.toLocaleString()} rows`
+      : `${rows.length.toLocaleString()} rows`;
+
   return (
     <section className={cn("flex flex-1 flex-col gap-2", className)}>
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2 text-[var(--text-muted)]">
-          <span className="rounded-full border border-[var(--outline)] px-2 py-1">{rows.length.toLocaleString()} rows</span>
+          <span className="rounded-full border border-[var(--outline)] px-2 py-1">{rowCountLabel}</span>
           <span className="rounded-full border border-[var(--outline)] px-2 py-1">{columns.length} columns</span>
           <span className="rounded-full border border-[var(--outline)] px-2 py-1">
             변경 {pendingEdits.length.toLocaleString()}건
@@ -421,6 +528,24 @@ export function DbSpreadsheet({
               })}
             </tbody>
           </table>
+          <div ref={loadMoreRef} className="h-10" role="presentation" />
+          {(isLoadingMore || loadError || !hasMore) && (
+            <div className="px-4 pb-4 text-center text-[11px] text-[var(--text-muted)]">
+              {loadError ? (
+                <button
+                  type="button"
+                  onClick={() => void loadMoreRows()}
+                  className="rounded-full border border-[var(--outline)] px-3 py-1 text-[var(--text-primary)]"
+                >
+                  다시 시도
+                </button>
+              ) : isLoadingMore ? (
+                "추가 데이터 로딩 중…"
+              ) : (
+                "모든 행을 불러왔습니다."
+              )}
+            </div>
+          )}
         </div>
       </div>
     </section>
