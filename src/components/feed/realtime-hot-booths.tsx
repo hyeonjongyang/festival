@@ -46,7 +46,6 @@ export function RealtimeHotBooths({ initial }: RealtimeHotBoothsProps) {
   const entries = trending.entries;
   const windowLabel = `${trending.windowMinutes}분`;
   const isHistory = trending.source === "history";
-  const basisLabel = isHistory ? "" : `${windowLabel} 기준`;
   const emptyMessage = isHistory
     ? "방문 기록이 아직 없습니다."
     : `최근 ${windowLabel} 방문 기록이 없습니다.`;
@@ -89,7 +88,6 @@ export function RealtimeHotBooths({ initial }: RealtimeHotBoothsProps) {
                 </p>
               </div>
               <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
-                {basisLabel ? <span>{basisLabel}</span> : null}
                 {error ? "업데이트 실패" : null}
                 <ChevronIcon
                   className={cn(
