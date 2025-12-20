@@ -301,7 +301,6 @@ export function buildDbWhere(
       return {
         [column.key]: {
           contains: filterValue,
-          mode: "insensitive",
         },
       };
     case "enum":
