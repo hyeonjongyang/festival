@@ -5,7 +5,7 @@ import useSWRInfinite from "swr/infinite";
 import type { UserRole } from "@prisma/client";
 import { jsonFetch } from "@/lib/client/http";
 import { cn } from "@/lib/client/cn";
-import { formatCompactDate, formatRelativeTime } from "@/lib/client/time";
+import { formatRelativeTime } from "@/lib/client/time";
 import type { FeedPage, TrendingBoothResult } from "@/types/api";
 import { useEffect, useMemo, useRef, useState, useId } from "react";
 import { createPortal } from "react-dom";
@@ -276,7 +276,7 @@ function FeedPanelContent({
                       {post.boothName}
                     </h3>
                     <p className="text-xs text-[var(--text-muted)]">
-                      {post.authorName} · {formatCompactDate(post.createdAt)} ({formatRelativeTime(post.createdAt)})
+                      {formatRelativeTime(post.createdAt)}
                     </p>
                     {post.boothRatingCount > 0 && post.boothRatingAverage !== null ? (
                       <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[var(--text-primary)]">

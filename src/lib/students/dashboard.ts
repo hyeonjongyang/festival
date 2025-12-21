@@ -15,6 +15,7 @@ export type StudentVisitLogItem = {
 export type StudentDashboardData = {
   id: string;
   studentId: string | null;
+  nickname: string;
   grade: number | null;
   classNumber: number | null;
   studentNumber: number | null;
@@ -57,6 +58,7 @@ export async function fetchStudentDashboard(
     select: {
       id: true,
       role: true,
+      nickname: true,
       grade: true,
       classNumber: true,
       studentNumber: true,
@@ -93,6 +95,7 @@ export async function fetchStudentDashboard(
   return {
     id: student.id,
     studentId: formatStudentId(student),
+    nickname: student.nickname,
     grade: student.grade ?? null,
     classNumber: student.classNumber ?? null,
     studentNumber: student.studentNumber ?? null,

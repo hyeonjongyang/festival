@@ -59,7 +59,11 @@ export function StarMeter({
       >
         <div
           className="flex drop-shadow-lg"
-          style={{ gap: `${gap}px`, color: "var(--rating-star, #fadb4a)" }}
+          style={{
+            gap: `${gap}px`,
+            color: "var(--rating-star, #fadb4a)",
+            width: `${totalWidth}px`,
+          }}
         >
           {renderRow("fill", max, pixelSize)}
         </div>
@@ -71,6 +75,7 @@ export function StarMeter({
 export function StarGlyph({ size = 20 }: { size?: number }) {
   return (
     <svg
+      className="shrink-0"
       width={size}
       height={size}
       viewBox="0 0 24 24"

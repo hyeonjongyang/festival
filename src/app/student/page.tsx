@@ -8,9 +8,7 @@ export default async function StudentPage() {
 
   return (
     <div className="space-y-6 pb-28">
-      <StudentDashboard initial={student} />
-      <div className="pt-4">
-      </div>
+      <StudentDashboard initial={student} variant="recent" />
     </div>
   );
 }

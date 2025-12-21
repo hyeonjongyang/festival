@@ -6,23 +6,44 @@ const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
   minute: "2-digit",
 });
 
-export function formatRelativeTime(dateString: string) {
+function getUnitDiff(diffMs: number, unitMs: number) {
+  const raw = diffMs / unitMs;
+  return diffMs >= 0 ? Math.floor(raw) : Math.ceil(raw);
+}
+
+export function formatRelativeTime(dateString: string, nowMs: number = Date.now()) {
   const date = new Date(dateString);
-  const now = Date.now();
-  const diff = date.getTime() - now;
-  const minutes = Math.round(diff / (1000 * 60));
+  const timestamp = date.getTime();
+
+  if (Number.isNaN(timestamp)) {
+    return "";
+  }
+
+  const diffMs = timestamp - nowMs;
+  const absMs = Math.abs(diffMs);
+
+  if (absMs < 1000) {
+    return "방금 전";
+  }
+
+  if (absMs < 60_000) {
+    const seconds = getUnitDiff(diffMs, 1000);
+    return relativeFormatter.format(seconds, "second");
+  }
+
+  const minutes = getUnitDiff(diffMs, 1000 * 60);
 
   if (Math.abs(minutes) < 60) {
     return relativeFormatter.format(minutes, "minute");
   }
 
-  const hours = Math.round(minutes / 60);
+  const hours = getUnitDiff(diffMs, 1000 * 60 * 60);
 
   if (Math.abs(hours) < 24) {
     return relativeFormatter.format(hours, "hour");
   }
 
-  const days = Math.round(hours / 24);
+  const days = getUnitDiff(diffMs, 1000 * 60 * 60 * 24);
   return relativeFormatter.format(days, "day");
 }
 
