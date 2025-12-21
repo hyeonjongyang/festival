@@ -176,6 +176,51 @@ textarea {
   color: var(--text-muted);
 }
 
+.rating-editable {
+  border-color: rgba(0, 145, 255, 0.28);
+  background: linear-gradient(135deg, rgba(0, 145, 255, 0.12), var(--surface));
+  box-shadow: 0 0 0 1px rgba(0, 145, 255, 0.14), var(--shadow-pop);
+  clip-path: inset(0 round 16px);
+  isolation: isolate;
+}
+
+.rating-editable::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 0%, rgba(0, 145, 255, 0.16) 45%, transparent 72%);
+  opacity: 0.65;
+  transform: translateX(-58%);
+  animation: ratingEditableSweep 3.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+@keyframes ratingEditableSweep {
+  0% {
+    transform: translateX(-62%);
+  }
+  55% {
+    transform: translateX(62%);
+  }
+  100% {
+    transform: translateX(62%);
+  }
+}
+
+@supports (color: color-mix(in srgb, white, black)) {
+  .rating-editable {
+    border-color: color-mix(in srgb, var(--accent) 55%, var(--outline));
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 14%, transparent),
+      var(--surface)
+    );
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent), var(--shadow-pop);
+  }
+}
+
 .status-pill {
   border-radius: 999px;
   padding: 2px 10px;
@@ -283,11 +328,38 @@ body.reveal-init .reveal-element:not(.reveal-visible) {
   }
 }
 
+@keyframes ratingOverlayReveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @keyframes scannerCardReveal {
   0% {
     opacity: 0;
     transform: translate3d(0, 30px, 0) scale(0.96);
     filter: blur(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes ratingCardReveal {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 34px, 0) scale(0.955);
+    filter: blur(2px);
+  }
+  55% {
+    opacity: 1;
+    transform: translate3d(0, -2px, 0) scale(1.01);
+    filter: blur(0);
   }
   100% {
     opacity: 1;
@@ -318,9 +390,23 @@ body.reveal-init .reveal-element:not(.reveal-visible) {
   animation-fill-mode: both;
 }
 
+.rating-overlay {
+  animation: ratingOverlayReveal 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.rating-overlay .rating-card {
+  animation: ratingCardReveal 0.62s cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .scanner-overlay,
   .scanner-overlay .glass-card {
+    animation: none !important;
+  }
+
+  .rating-overlay,
+  .rating-overlay .rating-card {
     animation: none !important;
   }
 

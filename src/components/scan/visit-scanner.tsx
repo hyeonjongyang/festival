@@ -6,7 +6,7 @@ import { BrowserMultiFormatReader } from "@zxing/browser";
 import { jsonFetch, HttpError } from "@/lib/client/http";
 import { formatCompactDate } from "@/lib/client/time";
 import type { RecordVisitResult } from "@/types/api";
-import { StarSelector } from "@/components/chrome/star-selector";
+import { RatingModal } from "@/components/ratings/rating-modal";
 import { extractBoothTokenFromQrPayload } from "@/lib/visits/qr-payload";
 
 type VisitScannerProps = {
@@ -477,79 +477,6 @@ function ScannerModal({ onClose, onDetect, busy }: ScannerModalProps) {
         {busy ? (
           <p className="mt-2 text-center text-xs text-[var(--text-muted)]">기록 중…</p>
         ) : null}
-      </div>
-    </div>
-  );
-}
-
-type RatingModalProps = {
-  boothId: string;
-  boothName: string;
-  onComplete: (result: { boothName: string; score: number }) => void;
-};
-
-function RatingModal({ boothId, boothName, onComplete }: RatingModalProps) {
-  const [score, setScore] = useState(0);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const submitRating = async () => {
-    if (!score || pending) return;
-
-    setPending(true);
-    setError(null);
-
-    try {
-      const payload = await jsonFetch<{ rating: { score: number } }>("/api/ratings", {
-        method: "POST",
-        body: JSON.stringify({ boothId, score }),
-      });
-
-      onComplete({ boothName, score: payload.rating.score });
-    } catch (err) {
-      if (err instanceof HttpError) {
-        setError(err.message);
-      } else {
-        setError("평점을 저장하지 못했습니다. 다시 시도해주세요.");
-      }
-    } finally {
-      setPending(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4" data-reveal="skip">
-      <div className="glass-card frosted relative w-full max-w-md rounded-[36px] border border-[var(--outline-strong)] bg-[var(--surface)] p-6 text-center shadow-2xl">
-        <h3 className="mt-2 text-2xl font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
-          {boothName}
-        </h3>
-
-        <div className="mt-6 flex flex-col items-center gap-4">
-          <StarSelector
-            value={score}
-            onChange={(value) => {
-              setScore(value);
-              setError(null);
-            }}
-            disabled={pending}
-          />
-          <div className="text-4xl font-semibold text-[var(--accent)]">{score > 0 ? `${score}.0` : "–"}</div>
-        </div>
-
-        {error ? (
-          <p className="mt-4 rounded-2xl border border-[var(--danger)]/40 px-4 py-3 text-sm text-[var(--danger)]">
-            {error}
-          </p>
-        ) : null}
-
-        <button
-          type="button"
-          className="mt-5 w-full rounded-3xl bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-white shadow-lg transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 disabled:opacity-60"
-          onClick={submitRating}
-          disabled={!score || pending}
-        >
-          {pending ? "저장 중…" : "평점 남기기"}
-        </button>
       </div>
     </div>
   );

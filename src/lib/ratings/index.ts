@@ -2,8 +2,11 @@ import { prisma } from "@/lib/prisma";
 import { BoothNotFoundError } from "@/lib/visits/errors";
 import {
   BoothRatingConflictError,
+  BoothRatingEditWindowExpiredError,
+  BoothRatingNotFoundError,
   MissingVisitHistoryError,
 } from "@/lib/ratings/errors";
+import { RATING_EDIT_WINDOW_MS } from "@/lib/ratings/policy";
 
 export type BoothRatingRecord = {
   id: string;
@@ -65,6 +68,82 @@ export async function rateBooth(params: {
       data: {
         boothId: params.boothId,
         studentId: params.studentId,
+        score: normalizedScore,
+      },
+      select: {
+        id: true,
+        boothId: true,
+        studentId: true,
+        score: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      ...rating,
+      createdAt: rating.createdAt.toISOString(),
+    };
+  });
+}
+
+export async function updateBoothRating(params: {
+  boothId: string;
+  studentId: string;
+  score: number;
+}): Promise<BoothRatingRecord> {
+  const normalizedScore = normalizeScore(params.score);
+
+  return prisma.$transaction(async (tx) => {
+    const booth = await tx.booth.findUnique({
+      where: { id: params.boothId },
+      select: { id: true },
+    });
+
+    if (!booth) {
+      throw new BoothNotFoundError();
+    }
+
+    const visit = await tx.boothVisit.findFirst({
+      where: {
+        boothId: params.boothId,
+        studentId: params.studentId,
+      },
+      orderBy: { visitedAt: "desc" },
+      select: { visitedAt: true },
+    });
+
+    if (!visit) {
+      throw new MissingVisitHistoryError();
+    }
+
+    const editableUntilMs = visit.visitedAt.getTime() + RATING_EDIT_WINDOW_MS;
+
+    if (Date.now() > editableUntilMs) {
+      throw new BoothRatingEditWindowExpiredError();
+    }
+
+    const existingRating = await tx.boothRating.findUnique({
+      where: {
+        boothId_studentId: {
+          boothId: params.boothId,
+          studentId: params.studentId,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!existingRating) {
+      throw new BoothRatingNotFoundError();
+    }
+
+    const rating = await tx.boothRating.update({
+      where: {
+        boothId_studentId: {
+          boothId: params.boothId,
+          studentId: params.studentId,
+        },
+      },
+      data: {
         score: normalizedScore,
       },
       select: {

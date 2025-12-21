@@ -58,7 +58,7 @@ export function StarMeter({
         }}
       >
         <div
-          className="flex drop-shadow-lg"
+          className={cn("flex", size === "sm" || muted ? null : "drop-shadow-lg")}
           style={{
             gap: `${gap}px`,
             color: "var(--rating-star, #fadb4a)",
