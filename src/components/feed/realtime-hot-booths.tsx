@@ -44,6 +44,11 @@ export function RealtimeHotBooths({ initial }: RealtimeHotBoothsProps) {
 
   const trending = data?.trending ?? initial;
   const entries = trending.entries;
+  const previewColumns = 3;
+  const hasPreviewOverflow = entries.length > previewColumns;
+  const previewBoothCount = hasPreviewOverflow ? previewColumns - 1 : previewColumns;
+  const previewEntries = entries.slice(0, Math.min(entries.length, previewBoothCount));
+  const previewRemainder = hasPreviewOverflow ? Math.max(0, entries.length - previewEntries.length) : 0;
   const windowLabel = `${trending.windowMinutes}분`;
   const isHistory = trending.source === "history";
   const emptyMessage = isHistory
@@ -60,7 +65,7 @@ export function RealtimeHotBooths({ initial }: RealtimeHotBoothsProps) {
       <div className="pointer-events-auto w-full max-w-md">
         <div
           className={cn(
-            "glass-card frosted relative overflow-hidden border border-[var(--outline)] px-4 py-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] transition-shadow",
+            "glass-card frosted relative overflow-hidden border border-[var(--outline)] px-3 py-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] transition-shadow",
             expanded && "shadow-[0_30px_80px_rgba(0,0,0,0.45)]",
           )}
         >
@@ -98,44 +103,90 @@ export function RealtimeHotBooths({ initial }: RealtimeHotBoothsProps) {
               </div>
             </div>
 
-            <div
-              className={cn(
-                "overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
-                expanded
-                  ? "max-h-0 -translate-y-2 opacity-0 pointer-events-none mt-0"
-                  : "max-h-24 translate-y-0 opacity-100 mt-2",
-              )}
-              aria-hidden={expanded}
-            >
-              <div className="flex gap-2 overflow-x-auto pb-1 pr-2 text-xs soft-scrollbar">
-                {entries.length > 0 ? (
-                  entries.map((entry) => (
-                    <span
-                      key={entry.id}
-                      className="inline-flex items-center gap-2 rounded-full border border-[var(--outline)] bg-[var(--surface-muted)] px-3 py-1 text-[var(--text-primary)]"
-                    >
-                      <span className="text-[10px] text-[var(--text-muted)]">#{entry.rank}</span>
-                      <span className="text-[11px] font-semibold">{entry.boothName}</span>
-                      {entry.ratingAverage !== null && entry.ratingCount > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--text-primary)]">
-                          <span style={{ color: "var(--rating-star, #fadb4a)" }}>
-                            <StarGlyph size={12} />
-                          </span>
-                          {entry.ratingAverage.toFixed(1)}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-[var(--text-muted)]">평점 없음</span>
-                      )}
-                    </span>
-                  ))
-                ) : (
-                  <span className="rounded-full border border-[var(--outline)] bg-[var(--surface-muted)] px-3 py-1 text-[11px] text-[var(--text-muted)]">
-                    {emptyMessage}
-                  </span>
-                )}
-              </div>
-            </div>
-          </button>
+	            <div
+	              className={cn(
+	                "overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+	                expanded
+	                  ? "max-h-0 -translate-y-3 opacity-0 pointer-events-none mt-0"
+	                  : "max-h-24 translate-y-0 opacity-100 mt-3",
+	              )}
+	              aria-hidden={expanded}
+	            >
+	              <div
+	                className={cn(
+	                  "gap-1.5 overflow-hidden text-xs",
+	                  entries.length > 0
+	                    ? "grid grid-flow-col grid-rows-1 items-center [grid-auto-columns:minmax(0,1fr)]"
+	                    : "flex",
+	                )}
+	              >
+	                {entries.length > 0 ? (
+	                  previewEntries.map((entry, idx) => (
+	                    <div
+	                      key={entry.id}
+	                      className="hot-booth-pill group/pill relative overflow-hidden rounded-full border border-[var(--hot-pill-border)] bg-[linear-gradient(135deg,var(--hot-pill-from),var(--hot-pill-to))] px-3.5 py-2 backdrop-blur-sm transition-all duration-300 hover:border-[var(--hot-pill-border-hover)]"
+	                      style={{
+	                        animationDelay: `${idx * 50}ms`,
+	                        animation: expanded
+	                          ? "none"
+	                          : "slideInFromTop 0.4s ease-out backwards",
+	                      }}
+	                    >
+	                      <div className="flex min-w-0 items-center gap-1.5">
+	                        <span
+	                          aria-label={rankAriaLabel(entry.rank)}
+	                          title={rankAriaLabel(entry.rank)}
+	                          className={cn(
+	                            "shrink-0 font-semibold text-[var(--text-muted)]",
+	                            entry.rank <= 3 ? "text-[14px]" : "text-[12px]",
+	                          )}
+	                        >
+	                          {rankPreviewLabel(entry.rank)}
+	                        </span>
+	                        <span
+	                          title={entry.boothName}
+	                          className="min-w-0 flex-1 overflow-hidden whitespace-nowrap text-clip text-[13px] font-normal leading-tight text-[var(--text-primary)]"
+	                        >
+	                          <span
+	                            className="block w-full"
+	                            style={{
+	                              WebkitMaskImage:
+	                                "linear-gradient(to right, #000 0, #000 calc(100% - 14px), transparent 100%)",
+	                              maskImage:
+	                                "linear-gradient(to right, #000 0, #000 calc(100% - 14px), transparent 100%)",
+	                            }}
+	                          >
+	                            {entry.boothName}
+	                          </span>
+	                        </span>
+	                      </div>
+	                    </div>
+	                  ))
+	                ) : (
+	                  <div className="rounded-full border border-[var(--hot-pill-border)] bg-[var(--hot-pill-empty)] px-4 py-2 text-[11px] text-[var(--text-muted)] backdrop-blur-sm">
+	                    {emptyMessage}
+	                  </div>
+	                )}
+	                {entries.length > 0 && previewRemainder > 0 ? (
+	                  <div
+	                    className="hot-booth-pill group/pill relative overflow-hidden rounded-full border border-[var(--hot-pill-border)] bg-[linear-gradient(135deg,var(--hot-pill-from),var(--hot-pill-to))] px-3.5 py-2 backdrop-blur-sm transition-all duration-300 hover:border-[var(--hot-pill-border-hover)]"
+	                    style={{
+	                      animationDelay: `${previewEntries.length * 50}ms`,
+	                      animation: expanded
+	                        ? "none"
+	                        : "slideInFromTop 0.4s ease-out backwards",
+	                    }}
+	                  >
+	                    <div className="flex min-w-0 items-center justify-center">
+	                      <span className="text-[12px] font-semibold text-[var(--text-muted)]">
+	                        +{previewRemainder}
+	                      </span>
+	                    </div>
+	                  </div>
+	                ) : null}
+	              </div>
+	            </div>
+	          </button>
 
           <div
             id={panelId}
@@ -167,11 +218,17 @@ export function RealtimeHotBooths({ initial }: RealtimeHotBoothsProps) {
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-xs text-[var(--text-muted)]">#{entry.rank}</p>
                           <p
-                            className="text-lg font-semibold text-[var(--text-primary)]"
-                            style={{ fontFamily: "var(--font-heading)" }}
+                            aria-label={rankAriaLabel(entry.rank)}
+                            title={rankAriaLabel(entry.rank)}
+                            className="text-xs text-[var(--text-muted)]"
                           >
+                            {rankLabel(entry.rank)}
+                          </p>
+	                          <p
+	                            className="text-lg font-normal text-[var(--text-primary)]"
+	                            style={{ fontFamily: "var(--font-heading)" }}
+	                          >
                             {entry.boothName}
                           </p>
                           <p className="text-xs text-[var(--text-muted)]">
@@ -229,4 +286,19 @@ function ChevronIcon(props: IconProps) {
       <path d="M5 7.5l5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
+}
+
+function rankLabel(rank: number) {
+  return `#${rank}`;
+}
+
+function rankPreviewLabel(rank: number) {
+  if (rank === 1) return "🥇";
+  if (rank === 2) return "🥈";
+  if (rank === 3) return "🥉";
+  return rankLabel(rank);
+}
+
+function rankAriaLabel(rank: number) {
+  return `랭크 ${rank}`;
 }

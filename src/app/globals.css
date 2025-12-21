@@ -23,10 +23,15 @@
   --reveal-delay-unit: 65ms;
   --reveal-distance: 22px;
   --reveal-blur: 12px;
+  --hot-pill-border: rgba(255, 255, 255, 0.12);
+  --hot-pill-border-hover: rgba(255, 255, 255, 0.2);
+  --hot-pill-from: rgba(255, 255, 255, 0.1);
+  --hot-pill-to: rgba(255, 255, 255, 0.04);
+  --hot-pill-empty: rgba(255, 255, 255, 0.06);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
+  @media (prefers-color-scheme: light) {
+    :root {
     color-scheme: light;
     --bg: #f2f7ff;
     --bg-secondary: #ffffff;
@@ -46,8 +51,13 @@
     --reveal-delay-unit: 55ms;
     --reveal-distance: 18px;
     --reveal-blur: 8px;
+    --hot-pill-border: rgba(0, 32, 77, 0.14);
+    --hot-pill-border-hover: rgba(0, 32, 77, 0.24);
+    --hot-pill-from: rgba(255, 255, 255, 0.85);
+    --hot-pill-to: rgba(255, 255, 255, 0.55);
+    --hot-pill-empty: rgba(255, 255, 255, 0.65);
+    }
   }
-}
 
 * {
   box-sizing: border-box;
@@ -286,6 +296,19 @@ body.reveal-init .reveal-element:not(.reveal-visible) {
   }
 }
 
+@keyframes slideInFromTop {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -14px, 0);
+    filter: blur(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: blur(0);
+  }
+}
+
 .scanner-overlay {
   animation: scannerOverlayReveal 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -298,6 +321,10 @@ body.reveal-init .reveal-element:not(.reveal-visible) {
 @media (prefers-reduced-motion: reduce) {
   .scanner-overlay,
   .scanner-overlay .glass-card {
+    animation: none !important;
+  }
+
+  .hot-booth-pill {
     animation: none !important;
   }
 }
