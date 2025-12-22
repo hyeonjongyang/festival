@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import type { SVGProps } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import useSWR from "swr";
 import { jsonFetch } from "@/lib/client/http";
 import { cn } from "@/lib/client/cn";
@@ -84,7 +85,7 @@ export function RealtimeHotBooths({ initial }: RealtimeHotBoothsProps) {
             onClick={() => setExpanded((current) => !current)}
             aria-expanded={expanded}
             aria-controls={panelId}
-            className="relative z-10 w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
+            className="relative z-10 block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -102,97 +103,90 @@ export function RealtimeHotBooths({ initial }: RealtimeHotBoothsProps) {
                 />
               </div>
             </div>
+          </button>
 
-	            <div
-	              className={cn(
-	                "overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
-	                expanded
-	                  ? "max-h-0 -translate-y-3 opacity-0 pointer-events-none mt-0"
-	                  : "max-h-24 translate-y-0 opacity-100 mt-3",
-	              )}
-	              aria-hidden={expanded}
-	            >
-	              <div
-	                className={cn(
-	                  "gap-1.5 overflow-hidden text-xs",
-	                  entries.length > 0
-	                    ? "grid grid-flow-col grid-rows-1 items-center [grid-auto-columns:minmax(0,1fr)]"
-	                    : "flex",
-	                )}
-	              >
-	                {entries.length > 0 ? (
-	                  previewEntries.map((entry, idx) => (
-	                    <div
-	                      key={entry.id}
-	                      className="hot-booth-pill group/pill relative overflow-hidden rounded-full border border-[var(--hot-pill-border)] bg-[linear-gradient(135deg,var(--hot-pill-from),var(--hot-pill-to))] px-3.5 py-2 backdrop-blur-sm transition-all duration-300 hover:border-[var(--hot-pill-border-hover)]"
-	                      style={{
-	                        animationDelay: `${idx * 50}ms`,
-	                        animation: expanded
-	                          ? "none"
-	                          : "slideInFromTop 0.4s ease-out backwards",
-	                      }}
-	                    >
-	                      <div className="flex min-w-0 items-center gap-1.5">
-	                        <span
-	                          aria-label={rankAriaLabel(entry.rank)}
-	                          title={rankAriaLabel(entry.rank)}
-	                          className={cn(
-	                            "shrink-0 font-semibold text-[var(--text-muted)]",
-	                            entry.rank <= 3 ? "text-[14px]" : "text-[12px]",
-	                          )}
-	                        >
-	                          {rankPreviewLabel(entry.rank)}
-	                        </span>
-	                        <span
-	                          title={entry.boothName}
-	                          className="min-w-0 flex-1 overflow-hidden whitespace-nowrap text-clip text-[13px] font-normal leading-tight text-[var(--text-primary)]"
-	                        >
-	                          <span
-	                            className="block w-full"
-	                            style={{
-	                              WebkitMaskImage:
-	                                "linear-gradient(to right, #000 0, #000 calc(100% - 14px), transparent 100%)",
-	                              maskImage:
-	                                "linear-gradient(to right, #000 0, #000 calc(100% - 14px), transparent 100%)",
-	                            }}
-	                          >
-	                            {entry.boothName}
-	                          </span>
-	                        </span>
-	                      </div>
-	                    </div>
-	                  ))
-	                ) : (
-	                  <div className="rounded-full border border-[var(--hot-pill-border)] bg-[var(--hot-pill-empty)] px-4 py-2 text-[11px] text-[var(--text-muted)] backdrop-blur-sm">
-	                    {emptyMessage}
-	                  </div>
-	                )}
-	                {entries.length > 0 && previewRemainder > 0 ? (
-	                  <div
-	                    className="hot-booth-pill group/pill relative overflow-hidden rounded-full border border-[var(--hot-pill-border)] bg-[linear-gradient(135deg,var(--hot-pill-from),var(--hot-pill-to))] px-3.5 py-2 backdrop-blur-sm transition-all duration-300 hover:border-[var(--hot-pill-border-hover)]"
-	                    style={{
-	                      animationDelay: `${previewEntries.length * 50}ms`,
-	                      animation: expanded
-	                        ? "none"
-	                        : "slideInFromTop 0.4s ease-out backwards",
-	                    }}
-	                  >
-	                    <div className="flex min-w-0 items-center justify-center">
-	                      <span className="text-[12px] font-semibold text-[var(--text-muted)]">
-	                        +{previewRemainder}
-	                      </span>
-	                    </div>
-	                  </div>
-	                ) : null}
-	              </div>
-	            </div>
-	          </button>
+          {!expanded ? (
+            <div className="relative z-10 mt-2.5">
+              <div
+                className={cn(
+                  "gap-1.5 overflow-hidden text-xs",
+                  entries.length > 0
+                    ? "grid grid-flow-col grid-rows-1 items-center [grid-auto-columns:minmax(0,1fr)]"
+                    : "flex",
+                )}
+              >
+                {entries.length > 0 ? (
+                  previewEntries.map((entry, idx) => (
+                    <Link
+                      key={entry.id}
+                      href={`/booths/${encodeURIComponent(entry.id)}`}
+                      className="hot-booth-pill group/pill relative overflow-hidden rounded-full border border-[var(--hot-pill-border)] bg-[linear-gradient(135deg,var(--hot-pill-from),var(--hot-pill-to))] px-3.5 py-2 backdrop-blur-sm transition-all duration-300 hover:border-[var(--hot-pill-border-hover)]"
+                      style={{
+                        animationDelay: `${idx * 50}ms`,
+                        animation: "slideInFromTop 0.4s ease-out backwards",
+                      }}
+                    >
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <span
+                          aria-label={rankAriaLabel(entry.rank)}
+                          title={rankAriaLabel(entry.rank)}
+                          className={cn(
+                            "shrink-0 font-semibold text-[var(--text-muted)]",
+                            entry.rank <= 3 ? "text-[14px]" : "text-[12px]",
+                          )}
+                        >
+                          {rankPreviewLabel(entry.rank)}
+                        </span>
+                        <span
+                          title={entry.boothName}
+                          className="min-w-0 flex-1 overflow-hidden whitespace-nowrap text-clip text-[13px] font-normal leading-tight text-[var(--text-primary)]"
+                        >
+                          <span
+                            className="block w-full"
+                            style={{
+                              WebkitMaskImage:
+                                "linear-gradient(to right, #000 0, #000 calc(100% - 14px), transparent 100%)",
+                              maskImage:
+                                "linear-gradient(to right, #000 0, #000 calc(100% - 14px), transparent 100%)",
+                            }}
+                          >
+                            {entry.boothName}
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="rounded-full border border-[var(--hot-pill-border)] bg-[var(--hot-pill-empty)] px-4 py-2 text-[11px] text-[var(--text-muted)] backdrop-blur-sm">
+                    {emptyMessage}
+                  </div>
+                )}
+                {entries.length > 0 && previewRemainder > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setExpanded(true)}
+                    className="hot-booth-pill group/pill relative overflow-hidden rounded-full border border-[var(--hot-pill-border)] bg-[linear-gradient(135deg,var(--hot-pill-from),var(--hot-pill-to))] px-3.5 py-2 backdrop-blur-sm transition-all duration-300 hover:border-[var(--hot-pill-border-hover)]"
+                    style={{
+                      animationDelay: `${previewEntries.length * 50}ms`,
+                      animation: "slideInFromTop 0.4s ease-out backwards",
+                    }}
+                  >
+                    <div className="flex min-w-0 items-center justify-center">
+                      <span className="text-[12px] font-semibold text-[var(--text-muted)]">
+                        +{previewRemainder}
+                      </span>
+                    </div>
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
 
           <div
             id={panelId}
             className={cn(
-              "relative z-10 grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
-              expanded ? "grid-rows-[1fr] opacity-100 -mt-2" : "grid-rows-[0fr] opacity-0 mt-0",
+              "relative z-10 grid transition-[grid-template-rows,opacity,margin-top] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+              expanded ? "grid-rows-[1fr] opacity-100 mt-3" : "grid-rows-[0fr] opacity-0 mt-0",
             )}
           >
             <div className="overflow-hidden pt-0">
@@ -211,56 +205,57 @@ export function RealtimeHotBooths({ initial }: RealtimeHotBoothsProps) {
               {!error && entries.length > 0 ? (
                 <ul className="space-y-3">
                   {entries.map((entry) => (
-                    <li
-                      key={entry.id}
-                      className="rounded-[22px] border border-[var(--outline)] bg-[var(--bg-secondary)]/90 px-4 py-3 transition hover:border-[var(--outline-strong)]"
-                      style={{ background: "var(--bg-secondary)" }}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p
-                            aria-label={rankAriaLabel(entry.rank)}
-                            title={rankAriaLabel(entry.rank)}
-                            className="text-xs text-[var(--text-muted)]"
-                          >
-                            {rankLabel(entry.rank)}
-                          </p>
-	                          <p
-	                            className="text-lg font-normal text-[var(--text-primary)]"
-	                            style={{ fontFamily: "var(--font-heading)" }}
-	                          >
-                            {entry.boothName}
-                          </p>
-                          <p className="text-xs text-[var(--text-muted)]">
-                            {entry.location ?? "위치 미정"}
-                          </p>
-                          {entry.ratingAverage !== null && entry.ratingCount > 0 ? (
-                            <div className="mt-2 flex items-center gap-2">
-                              <span className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--text-primary)]">
-                                <span style={{ color: "var(--rating-star, #fadb4a)" }}>
-                                  <StarGlyph size={14} />
+                    <li key={entry.id}>
+                      <Link
+                        href={`/booths/${encodeURIComponent(entry.id)}`}
+                        className="block rounded-[22px] border border-[var(--outline)] bg-[var(--bg-secondary)] px-4 py-3 transition hover:border-[var(--outline-strong)]"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p
+                              aria-label={rankAriaLabel(entry.rank)}
+                              title={rankAriaLabel(entry.rank)}
+                              className="text-xs text-[var(--text-muted)]"
+                            >
+                              {rankLabel(entry.rank)}
+                            </p>
+                            <p
+                              className="truncate text-lg font-normal text-[var(--text-primary)]"
+                              style={{ fontFamily: "var(--font-heading)" }}
+                            >
+                              {entry.boothName}
+                            </p>
+                            <p className="text-xs text-[var(--text-muted)]">
+                              {entry.location ?? "위치 미정"}
+                            </p>
+                            {entry.ratingAverage !== null && entry.ratingCount > 0 ? (
+                              <div className="mt-2 flex items-center gap-2">
+                                <span className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--text-primary)]">
+                                  <span style={{ color: "var(--rating-star, #fadb4a)" }}>
+                                    <StarGlyph size={14} />
+                                  </span>
+                                  {entry.ratingAverage.toFixed(1)}
                                 </span>
-                                {entry.ratingAverage.toFixed(1)}
-                              </span>
-                              <span className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                                {entry.ratingScope === "recent"
-                                  ? "최근 평점"
-                                  : "전체 평점"}
-                              </span>
-                            </div>
-                          ) : (
-                            <p className="mt-2 text-xs text-[var(--text-muted)]">평점 없음</p>
-                          )}
+                                <span className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                                  {entry.ratingScope === "recent"
+                                    ? "최근 평점"
+                                    : "전체 평점"}
+                                </span>
+                              </div>
+                            ) : (
+                              <p className="mt-2 text-xs text-[var(--text-muted)]">평점 없음</p>
+                            )}
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className="text-2xl font-semibold text-[var(--accent)]">
+                              {entry.recentVisitCount}
+                            </p>
+                            <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                              {isHistory ? "누적 방문" : "최근 방문"}
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-semibold text-[var(--accent)]">
-                            {entry.recentVisitCount}
-                          </p>
-                          <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                            {isHistory ? "누적 방문" : "최근 방문"}
-                          </p>
-                        </div>
-                      </div>
+                      </Link>
                     </li>
                   ))}
                 </ul>

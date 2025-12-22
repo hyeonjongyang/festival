@@ -13,6 +13,7 @@ export type BoothRatingRecord = {
   boothId: string;
   studentId: string;
   score: number;
+  review: string | null;
   createdAt: string;
 };
 
@@ -25,8 +26,10 @@ export async function rateBooth(params: {
   boothId: string;
   studentId: string;
   score: number;
+  review?: string | null;
 }): Promise<BoothRatingRecord> {
   const normalizedScore = normalizeScore(params.score);
+  const normalizedReview = normalizeReview(params.review);
 
   return prisma.$transaction(async (tx) => {
     const booth = await tx.booth.findUnique({
@@ -38,16 +41,22 @@ export async function rateBooth(params: {
       throw new BoothNotFoundError();
     }
 
-    const visitExists = await tx.boothVisit.findFirst({
+    const visit = await tx.boothVisit.findFirst({
       where: {
         boothId: params.boothId,
         studentId: params.studentId,
       },
-      select: { id: true },
+      orderBy: { visitedAt: "desc" },
+      select: { visitedAt: true },
     });
 
-    if (!visitExists) {
+    if (!visit) {
       throw new MissingVisitHistoryError();
+    }
+
+    const editableUntilMs = visit.visitedAt.getTime() + RATING_EDIT_WINDOW_MS;
+    if (Date.now() > editableUntilMs) {
+      throw new BoothRatingEditWindowExpiredError();
     }
 
     const existingRating = await tx.boothRating.findUnique({
@@ -69,18 +78,21 @@ export async function rateBooth(params: {
         boothId: params.boothId,
         studentId: params.studentId,
         score: normalizedScore,
+        review: normalizedReview,
       },
       select: {
         id: true,
         boothId: true,
         studentId: true,
         score: true,
+        review: true,
         createdAt: true,
       },
     });
 
     return {
       ...rating,
+      review: rating.review ?? null,
       createdAt: rating.createdAt.toISOString(),
     };
   });
@@ -90,6 +102,7 @@ export async function updateBoothRating(params: {
   boothId: string;
   studentId: string;
   score: number;
+  review?: string | null;
 }): Promise<BoothRatingRecord> {
   const normalizedScore = normalizeScore(params.score);
 
@@ -145,18 +158,23 @@ export async function updateBoothRating(params: {
       },
       data: {
         score: normalizedScore,
+        ...(params.review !== undefined
+          ? { review: normalizeReview(params.review) }
+          : {}),
       },
       select: {
         id: true,
         boothId: true,
         studentId: true,
         score: true,
+        review: true,
         createdAt: true,
       },
     });
 
     return {
       ...rating,
+      review: rating.review ?? null,
       createdAt: rating.createdAt.toISOString(),
     };
   });
@@ -207,4 +225,14 @@ function normalizeScore(score: number) {
   }
 
   return rounded;
+}
+
+function normalizeReview(review: string | null | undefined) {
+  if (review === null || review === undefined) return null;
+  const trimmed = review.trim();
+  if (!trimmed) return null;
+  if (trimmed.length > 300) {
+    throw new RangeError("리뷰는 300자 이하여야 합니다.");
+  }
+  return trimmed;
 }

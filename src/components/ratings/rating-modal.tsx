@@ -8,6 +8,7 @@ import { RATING_EDIT_WINDOW_MS } from "@/lib/ratings/policy";
 export type RatingModalResult = {
   boothName: string;
   score: number;
+  review: string | null;
 };
 
 type RatingModalProps = {
@@ -15,6 +16,7 @@ type RatingModalProps = {
   boothName: string;
   mode?: "create" | "edit";
   initialScore?: number;
+  initialReview?: string | null;
   visitedAt?: string;
   dismissible?: boolean;
   onComplete: (result: RatingModalResult) => void;
@@ -26,40 +28,43 @@ export function RatingModal({
   boothName,
   mode = "create",
   initialScore = 0,
+  initialReview = null,
   visitedAt,
   dismissible = false,
   onComplete,
   onClose,
 }: RatingModalProps) {
   const [score, setScore] = useState(initialScore);
+  const [review, setReview] = useState(initialReview ?? "");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setScore(initialScore);
+    setReview(initialReview ?? "");
     setError(null);
-  }, [boothId, initialScore, mode]);
+  }, [boothId, initialScore, initialReview, mode]);
 
-  const editingLocked = (() => {
-    if (mode !== "edit" || !visitedAt) return false;
+  const interactionLocked = (() => {
+    if (!visitedAt) return false;
     const visitedAtMs = Date.parse(visitedAt);
     if (!Number.isFinite(visitedAtMs)) return false;
     return Date.now() > visitedAtMs + RATING_EDIT_WINDOW_MS;
   })();
 
   const submitRating = async () => {
-    if (!score || pending || editingLocked) return;
+    if (!score || pending || interactionLocked) return;
 
     setPending(true);
     setError(null);
 
     try {
-      const payload = await jsonFetch<{ rating: { score: number } }>("/api/ratings", {
+      const payload = await jsonFetch<{ rating: { score: number; review: string | null } }>("/api/ratings", {
         method: mode === "edit" ? "PATCH" : "POST",
-        body: JSON.stringify({ boothId, score }),
+        body: JSON.stringify({ boothId, score, review }),
       });
 
-      onComplete({ boothName, score: payload.rating.score });
+      onComplete({ boothName, score: payload.rating.score, review: payload.rating.review ?? null });
     } catch (err) {
       if (err instanceof HttpError) {
         setError(err.message);
@@ -104,7 +109,7 @@ export function RatingModal({
         </h3>
 
         <p className="mt-2 text-sm text-[var(--text-muted)]">
-          방문 후 <span className="font-semibold text-[var(--text-primary)]">10분</span>까지 평점을 수정할 수 있어요.
+          방문 후 <span className="font-semibold text-[var(--text-primary)]">10분</span> 안에 평점/리뷰를 작성하고 수정할 수 있어요.
         </p>
 
         <div className="mt-6 flex flex-col items-center gap-4">
@@ -114,9 +119,27 @@ export function RatingModal({
               setScore(value);
               setError(null);
             }}
-            disabled={pending || editingLocked}
+            disabled={pending || interactionLocked}
           />
           <div className="text-4xl font-semibold text-[var(--accent)]">{score > 0 ? `${score}.0` : "–"}</div>
+        </div>
+
+        <div className="mt-5 text-left">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold tracking-[-0.01em] text-[var(--text-muted)]">리뷰(선택)</p>
+          </div>
+          <textarea
+            value={review}
+            onChange={(event) => {
+              setReview(event.target.value);
+              setError(null);
+            }}
+            placeholder="좋았던 점을 짧게 남겨주세요."
+            maxLength={300}
+            rows={4}
+            disabled={pending || interactionLocked}
+            className="mt-2 w-full resize-none rounded-3xl border border-[var(--outline)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--outline-strong)] disabled:opacity-60"
+          />
         </div>
 
         {error ? (
@@ -129,7 +152,7 @@ export function RatingModal({
           type="button"
           className="mt-5 w-full rounded-3xl bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-white shadow-lg transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 disabled:opacity-60"
           onClick={submitRating}
-          disabled={!score || pending || editingLocked}
+          disabled={!score || pending || interactionLocked}
         >
           {pending ? (mode === "edit" ? "수정 중…" : "저장 중…") : mode === "edit" ? "평점 수정하기" : "평점 남기기"}
         </button>

@@ -18,6 +18,11 @@ const ratingSchema = z.object({
     .number({ message: "평점은 숫자여야 합니다." })
     .min(1, { message: "평점은 1 이상이어야 합니다." })
     .max(5, { message: "평점은 5 이하여야 합니다." }),
+  review: z
+    .string({ message: "리뷰는 문자열이어야 합니다." })
+    .max(300, { message: "리뷰는 300자 이하여야 합니다." })
+    .optional()
+    .nullable(),
 });
 
 export async function POST(request: Request) {
@@ -55,6 +60,7 @@ export async function POST(request: Request) {
       boothId: parsed.data.boothId,
       studentId: session.id,
       score: parsed.data.score,
+      review: parsed.data.review,
     });
 
     return NextResponse.json({ rating });
@@ -69,6 +75,10 @@ export async function POST(request: Request) {
 
     if (error instanceof BoothRatingConflictError) {
       return NextResponse.json({ message: error.message }, { status: 409 });
+    }
+
+    if (error instanceof BoothRatingEditWindowExpiredError) {
+      return NextResponse.json({ message: error.message }, { status: 403 });
     }
 
     if (error instanceof RangeError) {
@@ -121,6 +131,7 @@ export async function PATCH(request: Request) {
       boothId: parsed.data.boothId,
       studentId: session.id,
       score: parsed.data.score,
+      review: parsed.data.review,
     });
 
     return NextResponse.json({ rating });

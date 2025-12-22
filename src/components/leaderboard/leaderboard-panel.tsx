@@ -1,6 +1,7 @@
 "use client";
 
 import useSWR from "swr";
+import Link from "next/link";
 import { jsonFetch } from "@/lib/client/http";
 import { formatCompactDate } from "@/lib/client/time";
 import type { BoothLeaderboardResult } from "@/types/api";
@@ -56,31 +57,35 @@ export function LeaderboardPanel({ initial, highlightBoothId }: LeaderboardPanel
       ) : (
         <ul className="mt-4 space-y-3">
           {leaderboard.entries.map((entry) => (
-            <li
-              key={entry.id}
-              className={`rounded-[24px] border px-4 py-3 ${entry.id === highlightBoothId ? "border-[var(--accent)] bg-[var(--accent-soft)]" : "border-[var(--outline)] bg-[var(--surface-muted)]"}`}
-            >
-              <div className="flex items-center justify-between text-sm">
-                <div>
-                  <p className="text-xs text-[var(--text-muted)]">#{entry.rank}</p>
-                  <p className="text-lg font-semibold text-[var(--text-primary)]">{entry.boothName}</p>
-                  <p className="text-xs text-[var(--text-muted)]">{entry.location ?? "위치 미정"}</p>
-                  {entry.ratingCount > 0 && entry.averageRating !== null ? (
-                    <span className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-[var(--text-primary)]">
-                      <span style={{ color: "var(--rating-star, #fadb4a)" }}>
-                        <StarGlyph size={16} />
+            <li key={entry.id}>
+              <Link
+                href={`/booths/${encodeURIComponent(entry.id)}`}
+                className={`group block rounded-[24px] border px-4 py-3 transition hover:border-[var(--outline-strong)] ${entry.id === highlightBoothId ? "border-[var(--accent)] bg-[var(--accent-soft)]" : "border-[var(--outline)] bg-[var(--surface-muted)]"}`}
+              >
+                <div className="flex items-center justify-between text-sm">
+                  <div className="min-w-0">
+                    <p className="text-xs text-[var(--text-muted)]">#{entry.rank}</p>
+                    <p className="truncate text-lg font-semibold text-[var(--text-primary)] transition group-hover:text-[var(--accent)]">
+                      {entry.boothName}
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)]">{entry.location ?? "위치 미정"}</p>
+                    {entry.ratingCount > 0 && entry.averageRating !== null ? (
+                      <span className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-[var(--text-primary)]">
+                        <span style={{ color: "var(--rating-star, #fadb4a)" }}>
+                          <StarGlyph size={16} />
+                        </span>
+                        {entry.averageRating.toFixed(1)}
                       </span>
-                      {entry.averageRating.toFixed(1)}
-                    </span>
-                  ) : (
-                    <p className="mt-2 text-xs text-[var(--text-muted)]">평점 없음</p>
-                  )}
+                    ) : (
+                      <p className="mt-2 text-xs text-[var(--text-muted)]">평점 없음</p>
+                    )}
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-2xl font-semibold text-[var(--accent)]">{entry.totalVisits}</p>
+                    <p className="text-xs text-[var(--text-muted)]">누적 방문</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-2xl font-semibold text-[var(--accent)]">{entry.totalVisits}</p>
-                  <p className="text-xs text-[var(--text-muted)]">누적 방문</p>
-                </div>
-              </div>
+              </Link>
             </li>
           ))}
         </ul>

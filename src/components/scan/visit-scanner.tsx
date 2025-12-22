@@ -35,7 +35,7 @@ export function VisitScannerController({ onRecorded, children }: VisitScannerCon
   const [manualToken, setManualToken] = useState("");
   const [status, setStatus] = useState<{ tone: "error" | "info"; message: string } | null>(null);
   const [pending, setPending] = useState(false);
-  const [ratingPrompt, setRatingPrompt] = useState<{ boothId: string; boothName: string } | null>(null);
+  const [ratingPrompt, setRatingPrompt] = useState<{ boothId: string; boothName: string; visitedAt: string } | null>(null);
   const [isPortalReady, setPortalReady] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -85,6 +85,7 @@ export function VisitScannerController({ onRecorded, children }: VisitScannerCon
           setRatingPrompt({
             boothId: payload.ratingStatus.boothId,
             boothName: payload.visit.boothName,
+            visitedAt: payload.visit.visitedAt,
           });
         }
       } catch (error) {
@@ -151,6 +152,7 @@ export function VisitScannerController({ onRecorded, children }: VisitScannerCon
             <RatingModal
               boothId={ratingPrompt.boothId}
               boothName={ratingPrompt.boothName}
+              visitedAt={ratingPrompt.visitedAt}
               onComplete={() => {
                 setRatingPrompt(null);
               }}

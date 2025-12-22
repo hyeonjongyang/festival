@@ -31,6 +31,7 @@ export function StudentDashboard({ initial, variant = "full" }: StudentDashboard
     boothName: string;
     visitedAt: string;
     currentScore: number;
+    currentReview: string | null;
   } | null>(null);
   const [portalReady, setPortalReady] = useState(false);
   useEffect(() => {
@@ -110,6 +111,7 @@ export function StudentDashboard({ initial, variant = "full" }: StudentDashboard
                         boothName: visit.boothName,
                         visitedAt: visit.visitedAt,
                         currentScore: visit.rating,
+                        currentReview: visit.review ?? null,
                       });
                     }}
                   >
@@ -141,6 +143,7 @@ export function StudentDashboard({ initial, variant = "full" }: StudentDashboard
             boothName={editPrompt.boothName}
             mode="edit"
             initialScore={editPrompt.currentScore}
+            initialReview={editPrompt.currentReview}
             visitedAt={editPrompt.visitedAt}
             dismissible
             onClose={() => setEditPrompt(null)}
@@ -153,7 +156,7 @@ export function StudentDashboard({ initial, variant = "full" }: StudentDashboard
                     student: {
                       ...current.student,
                       recentVisits: current.student.recentVisits.map((visit) =>
-                        visit.boothId === boothId ? { ...visit, rating: result.score } : visit,
+                        visit.boothId === boothId ? { ...visit, rating: result.score, review: result.review } : visit,
                       ),
                     },
                   };
@@ -197,6 +200,7 @@ export function StudentDashboard({ initial, variant = "full" }: StudentDashboard
           boothName={editPrompt.boothName}
           mode="edit"
           initialScore={editPrompt.currentScore}
+          initialReview={editPrompt.currentReview}
           visitedAt={editPrompt.visitedAt}
           dismissible
           onClose={() => setEditPrompt(null)}
@@ -209,7 +213,7 @@ export function StudentDashboard({ initial, variant = "full" }: StudentDashboard
                   student: {
                     ...current.student,
                     recentVisits: current.student.recentVisits.map((visit) =>
-                      visit.boothId === boothId ? { ...visit, rating: result.score } : visit,
+                      visit.boothId === boothId ? { ...visit, rating: result.score, review: result.review } : visit,
                     ),
                   },
                 };

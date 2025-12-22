@@ -20,7 +20,7 @@ export class BoothRatingNotFoundError extends Error {
 }
 
 export class BoothRatingEditWindowExpiredError extends Error {
-  constructor(message = "평점 수정은 방문 후 10분까지만 가능합니다.") {
+  constructor(message = "평점/리뷰 작성 및 수정은 방문 후 10분까지만 가능합니다.") {
     super(message);
     this.name = "BoothRatingEditWindowExpiredError";
   }

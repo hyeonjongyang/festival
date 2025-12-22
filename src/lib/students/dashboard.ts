@@ -10,6 +10,7 @@ export type StudentVisitLogItem = {
   boothName: string;
   visitedAt: string;
   rating: number | null;
+  review: string | null;
 };
 
 export type StudentDashboardData = {
@@ -31,6 +32,7 @@ type VisitLogRecord = {
     name: string | null;
     ratings: {
       score: number;
+      review: string | null;
     }[];
   } | null;
 };
@@ -42,6 +44,7 @@ export function mapVisitLogs(records: VisitLogRecord[]): StudentVisitLogItem[] {
     boothName: formatBoothName(record.booth?.name),
     visitedAt: record.visitedAt.toISOString(),
     rating: record.booth?.ratings?.[0]?.score ?? null,
+    review: record.booth?.ratings?.[0]?.review ?? null,
   }));
 }
 
@@ -85,6 +88,7 @@ export async function fetchStudentDashboard(
             where: { studentId: student.id },
             select: {
               score: true,
+              review: true,
             },
           },
         },

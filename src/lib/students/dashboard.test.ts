@@ -10,7 +10,7 @@ describe("mapVisitLogs", () => {
       {
         id: "log-1",
         visitedAt: now,
-        booth: { id: "booth-1", name: "미디어 부스", ratings: [{ score: 5 }] },
+        booth: { id: "booth-1", name: "미디어 부스", ratings: [{ score: 5, review: "최고예요" }] },
       },
       {
         id: "log-2",
@@ -28,6 +28,7 @@ describe("mapVisitLogs", () => {
         boothName: "미디어 부스",
         visitedAt: now.toISOString(),
         rating: 5,
+        review: "최고예요",
       },
       {
         id: "log-2",
@@ -35,6 +36,7 @@ describe("mapVisitLogs", () => {
         boothName: "이름 없는 부스",
         visitedAt: later.toISOString(),
         rating: null,
+        review: null,
       },
     ]);
   });
