@@ -164,15 +164,17 @@ describe("mapRecentVisitLog", () => {
   });
 });
 
-describe("mapViolationRecord", () => {
-  it("returns a warning summary and metadata", () => {
-    const record = {
-      id: "violation_1",
-      type: VisitViolationType.DUPLICATE_VISIT,
-      detectedAt: new Date("2024-05-12T01:10:00.000Z"),
-      lastVisitedAt: new Date("2024-05-12T00:55:00.000Z"),
-      availableAt: new Date("2024-05-12T01:25:00.000Z"),
-      booth: { name: "게임존" },
+	describe("mapViolationRecord", () => {
+	  it("returns a warning summary and metadata", () => {
+	    const record = {
+	      id: "violation_1",
+	      boothId: "booth_1",
+	      studentId: "student_1",
+	      type: VisitViolationType.DUPLICATE_VISIT,
+	      detectedAt: new Date("2024-05-12T01:10:00.000Z"),
+	      lastVisitedAt: new Date("2024-05-12T00:55:00.000Z"),
+	      availableAt: new Date("2024-05-12T01:25:00.000Z"),
+	      booth: { name: "게임존" },
       student: {
         nickname: "별빛",
         grade: 2,

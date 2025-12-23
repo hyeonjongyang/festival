@@ -3,7 +3,8 @@ import { fetchBoothLeaderboard } from "@/lib/leaderboard";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(_request: Request) {
+  void _request;
   try {
     const leaderboard = await fetchBoothLeaderboard();
     return NextResponse.json({ leaderboard });

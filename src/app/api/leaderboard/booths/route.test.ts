@@ -3,7 +3,7 @@ import type { BoothLeaderboardResult } from "@/lib/leaderboard";
 import { GET } from "./route";
 
 const fetchBoothLeaderboardMock = vi.hoisted(() =>
-  vi.fn<Promise<BoothLeaderboardResult>, []>(),
+  vi.fn<() => Promise<BoothLeaderboardResult>>(),
 );
 
 vi.mock("@/lib/leaderboard", async () => {

@@ -7,7 +7,7 @@
 - Next.js 16 (App Router) + React 19
 - Tailwind CSS v4 + PostCSS
 - TypeScript, ESLint (Next core web vitals rules)
-- Prisma + SQLite(개발)/PostgreSQL(배포 예정)
+- Prisma + SQLite(현재 기본 DB)
 
 ## Quick Start
 
@@ -33,7 +33,7 @@
 
 | Key             | Description                                                       |
 | --------------- | ----------------------------------------------------------------- |
-| `DATABASE_URL`  | 개발에선 `file:./prisma/dev.db` 형태의 SQLite, 배포 시 PostgreSQL |
+| `DATABASE_URL`  | `file:...` 형태의 SQLite URL (배포도 SQLite로 운영 가능) |
 | `SESSION_SECRET`| 16자 이상 임의 문자열. 세션 쿠키 HMAC 서명에 사용됩니다.          |
 
 필요 시 `npx dotenv-vault`와 같은 도구로 팀 간 공유를 준비해주세요.
@@ -50,6 +50,7 @@
 - `/api/auth/code-login`으로 5자리 숫자 코드를 제출하면 세션 쿠키(`fc_session`)가 발급됩니다.
 - 세션은 HMAC-SHA256으로 서명되고 12시간 동안 유효합니다. `SessionProvider`가 전역 레이아웃에서 현재 사용자를 노출합니다.
 - `getSessionUser` 및 `requireRole` 헬퍼로 서버 컴포넌트/레이아웃에서 역할 기반 접근 제어를 적용합니다.
+- 운영 환경에서는 무차별 대입을 줄이기 위해 `/api/auth/code-login`에 IP 기반 rate limit(10분 20회)이 적용됩니다.
 
 ## Admin Accounts & Excel Export
 
@@ -73,9 +74,9 @@ Excel은 UTF-8로 저장되며, 생성 시각/생성자는 `AccountBatch` 모델
 
 ## Feed Uploads
 
-- 부스 관리자는 `/booth/feed/new`에서 본문과 단일 이미지를 함께 업로드할 수 있으며, 서버는 `/api/posts` Route Handler가 FormData를 검증한 뒤 `public/uploads/posts/{postId}/image.(jpg|png|webp)`에 파일을 저장합니다.
+- 부스 관리자는 `/booth/feed/new`에서 본문과 단일 이미지를 함께 업로드할 수 있으며, 서버는 `/api/posts` Route Handler가 FormData를 검증한 뒤 `uploads/posts/{postId}/image.(jpg|png|webp)`에 파일을 저장합니다. 이미지는 `/api/uploads/...`로 서빙됩니다.
 - 학생과 관람객은 `/feed`에서 무한 스크롤 피드를 확인합니다. 데이터는 `fetchFeedPage`(Prisma + 페이지네이션)으로 공급되고, 방문 스캐너와 관리용 삭제 버튼만 노출됩니다.
-- 이미지 정리는 하루 단위 CRON(Job) TODO로 남겨 두었으며, README와 UI에 동일한 정책을 명시해 운영자가 주기적으로 `public/uploads/posts`를 확인할 수 있도록 했습니다.
+- 이미지 정리는 하루 단위 CRON(Job) TODO로 남겨 두었으며, README와 UI에 동일한 정책을 명시해 운영자가 주기적으로 `uploads/posts`를 확인할 수 있도록 했습니다.
 
 ## Visit Workflow
 
@@ -97,6 +98,7 @@ Excel은 UTF-8로 저장되며, 생성 시각/생성자는 `AccountBatch` 모델
 | `npm run dev`            | Next.js 개발 서버 (hot reload 포함)                                |
 | `npm run build`          | 프로덕션 빌드 생성                                                  |
 | `npm run start`          | 빌드 산출물 실행                                                    |
+| `npm run db:migrate`     | Prisma migrate deploy (운영 DB 스키마 반영)                          |
 | `npm run lint`           | ESLint 검사                                                         |
 | `npm run test`           | Vitest 기본 모드(Watcher)                                           |
 | `npm run test:unit`      | Vitest를 `run` 모드로 실행해 학번/코드 생성기 등 순수 유틸/도메인 로직을 검증 |
@@ -104,7 +106,7 @@ Excel은 UTF-8로 저장되며, 생성 시각/생성자는 `AccountBatch` 모델
 | `npm run test:prisma`    | Prisma DMMF 기반 스키마 무결성 검사                                 |
 | `npm run test:all`       | 위 세 가지 테스트를 순차 실행                                        |
 | `npm run audit:lighthouse` | 실행 중인 서버를 대상으로 모바일 기본 설정 Lighthouse 리포트를 생성    |
-| `npm run prepare:deploy` | lint → test:all → build 순으로 배포 전 점검                          |
+| `npm run prepare:deploy` | lint → typecheck → test:all → build 순으로 배포 전 점검              |
 | `npm run deploy:vercel`  | `prepare:deploy` 이후 `npx vercel deploy --prebuilt` 자동 실행        |
 
 ## Project Structure
@@ -141,3 +143,9 @@ festival-app/
 3. 다른 호스팅 환경이라면 `npm run build` 후 `.next` 디렉터리를 서버에 업로드하고 `npm run start`로 실행하세요.
 
 > 개발 환경에서는 `.env.local`에 `DATABASE_URL`, `SESSION_SECRET`을 유지하고, 배포 환경에서는 같은 값을 플랫폼의 Secret/Env 관리 기능으로 주입합니다.
+
+### VPS Notes (Direct Hosting)
+
+- 파일 저장소가 필요합니다: `uploads/`(피드 이미지)와 `public/uploads/`(Excel 배치)가 런타임에 쓰기 가능해야 합니다.
+- SQLite를 쓴다면 `DATABASE_URL`을 상대 경로 대신 `file:/var/lib/.../festival.db` 같은 **절대 경로**로 두는 것을 권장합니다(working dir 의존 제거 + 백업 쉬움).
+- 리버스 프록시(Nginx 등)에서 HTTPS 종료 + 업로드를 위한 `client_max_body_size` 설정이 필요할 수 있습니다.

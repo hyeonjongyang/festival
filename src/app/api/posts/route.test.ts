@@ -2,7 +2,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { FeedPage, FeedPageParams } from "@/lib/posts/feed";
 import { GET } from "./route";
 
-const fetchFeedPageMock = vi.hoisted(() => vi.fn<Promise<FeedPage>, [FeedPageParams?]>());
+const fetchFeedPageMock = vi.hoisted(() =>
+  vi.fn<(params?: FeedPageParams) => Promise<FeedPage>>(),
+);
 
 vi.mock("@/lib/posts/feed", async () => {
   const actual = await vi.importActual<typeof import("@/lib/posts/feed")>(

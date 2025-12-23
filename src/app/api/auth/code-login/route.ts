@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { formatStudentId } from "@/lib/students/student-id";
+import { getRequestIp, rateLimit } from "@/lib/security/rate-limit";
 import {
   clearSessionCookie,
   createSessionToken,
@@ -19,6 +20,25 @@ const loginSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const ip = getRequestIp(request);
+  const limiter = rateLimit({
+    key: `code-login:${ip}`,
+    limit: 20,
+    windowMs: 10 * 60 * 1000,
+  });
+
+  if (!limiter.allowed) {
+    return NextResponse.json(
+      { message: "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(limiter.retryAfterSeconds),
+        },
+      },
+    );
+  }
+
   let body: unknown;
 
   try {

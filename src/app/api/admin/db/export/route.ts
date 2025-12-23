@@ -53,6 +53,8 @@ export async function GET(request: NextRequest) {
     const response = new NextResponse(csv);
     response.headers.set("Content-Type", "text/csv; charset=utf-8");
     response.headers.set("Content-Disposition", `attachment; filename="${createFilename(config.key, "csv")}"`);
+    response.headers.set("Cache-Control", "no-store");
+    response.headers.set("X-Content-Type-Options", "nosniff");
     return response;
   }
 
@@ -60,6 +62,8 @@ export async function GET(request: NextRequest) {
   const response = new NextResponse(json);
   response.headers.set("Content-Type", "application/json; charset=utf-8");
   response.headers.set("Content-Disposition", `attachment; filename="${createFilename(config.key, "json")}"`);
+  response.headers.set("Cache-Control", "no-store");
+  response.headers.set("X-Content-Type-Options", "nosniff");
   return response;
 }
 

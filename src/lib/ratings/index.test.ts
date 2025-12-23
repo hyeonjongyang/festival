@@ -11,7 +11,16 @@ const prismaMocks = vi.hoisted(() => {
 });
 
 vi.mock("@/lib/prisma", () => {
-  const tx = {
+  type PrismaTx = {
+    booth: { findUnique: typeof prismaMocks.boothFindUnique };
+    boothVisit: { findFirst: typeof prismaMocks.boothVisitFindFirst };
+    boothRating: {
+      findUnique: typeof prismaMocks.boothRatingFindUnique;
+      update: typeof prismaMocks.boothRatingUpdate;
+    };
+  };
+
+  const tx: PrismaTx = {
     booth: { findUnique: prismaMocks.boothFindUnique },
     boothVisit: { findFirst: prismaMocks.boothVisitFindFirst },
     boothRating: {
@@ -22,7 +31,8 @@ vi.mock("@/lib/prisma", () => {
 
   return {
     prisma: {
-      $transaction: async (fn: (tx: typeof tx) => Promise<unknown>) => fn(tx),
+      $transaction: async (fn: (transaction: PrismaTx) => Promise<unknown>) =>
+        fn(tx),
     },
   };
 });
@@ -83,4 +93,3 @@ describe("updateBoothRating", () => {
     expect(args?.data).toMatchObject({ score: 4, review: "hello" });
   });
 });
-

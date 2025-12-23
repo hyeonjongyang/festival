@@ -30,7 +30,6 @@ export async function getSessionUser() {
       classNumber: true,
       studentNumber: true,
       visitCount: true,
-      code: true,
     },
   });
 

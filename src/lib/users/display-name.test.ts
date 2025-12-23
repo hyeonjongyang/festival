@@ -14,12 +14,15 @@ describe("getUserDisplayName", () => {
     ).toBe("20307");
   });
 
-  it("falls back to nickname for non-students", () => {
-    expect(
-      getUserDisplayName({
-        role: "BOOTH_MANAGER",
-        nickname: "운영팀",
-      }),
-    ).toBe("운영팀");
-  });
-});
+	  it("falls back to nickname for non-students", () => {
+	    expect(
+	      getUserDisplayName({
+	        role: "BOOTH_MANAGER",
+	        nickname: "운영팀",
+	        grade: null,
+	        classNumber: null,
+	        studentNumber: null,
+	      }),
+	    ).toBe("운영팀");
+	  });
+	});
