@@ -88,6 +88,10 @@ export function LoginForm() {
           >
             {pending ? "확인 중…" : "로그인"}
           </button>
+
+          <p className="text-xs font-medium tracking-[0.08em] text-[var(--text-muted)]">
+            문의: 3층 정보2실 양현종
+          </p>
         </form>
       </div>
     </div>
