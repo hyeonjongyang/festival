@@ -135,17 +135,6 @@ export function BoothDashboard({ initial, origin }: BoothDashboardProps) {
         ) : null}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-[24px] border border-[var(--outline)] bg-[var(--surface-muted)] p-4">
-          <p className="text-xs text-[var(--text-muted)]">누적 방문</p>
-          <p className="text-3xl font-semibold text-[var(--accent)]">{dashboard.stats.totalVisits}</p>
-        </div>
-        <div className="rounded-[24px] border border-[var(--outline)] bg-[var(--surface-muted)] p-4">
-          <p className="text-xs text-[var(--text-muted)]">고유 방문자</p>
-          <p className="text-3xl font-semibold text-[var(--accent)]">{dashboard.stats.uniqueVisitors}</p>
-        </div>
-      </div>
-
       <div className="p-5">
         <div className="flex items-center justify-between">
           <p className="font-semibold">최근 방문 로그</p>

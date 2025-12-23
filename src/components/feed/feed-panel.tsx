@@ -15,6 +15,9 @@ import { StarGlyph } from "@/components/chrome/star-meter";
 import { BoothPostComposer } from "@/components/booth/booth-post-composer";
 import { VisitScannerController, type VisitScannerControllerRenderProps } from "@/components/scan/visit-scanner";
 import { RealtimeHotBooths } from "@/components/feed/realtime-hot-booths";
+import { BoothQrScanNoticeModal } from "@/components/booth/booth-qr-scan-notice-modal";
+import { useRouter } from "next/navigation";
+import { useSession } from "@/components/session-context";
 
 type FeedApiResponse = {
   feed: FeedPage;
@@ -60,14 +63,20 @@ function FeedPanelContent({
   booth,
   scannerControls,
 }: FeedPanelContentProps) {
+  const router = useRouter();
+  const { setSession } = useSession();
   const isAdmin = viewerRole === "ADMIN";
   const canCreatePost = viewerRole === "BOOTH_MANAGER";
   const isStudent = viewerRole === "STUDENT";
   const canScan = Boolean(isStudent && scannerControls);
   const deepLinkSubmitToken = scannerControls?.submitToken;
   const deepLinkLastTokenRef = useRef<string | null>(null);
+  const boothQrTokenRef = useRef<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
   const [composerOpen, setComposerOpen] = useState(false);
+  const [boothQrNoticeOpen, setBoothQrNoticeOpen] = useState(false);
+  const [boothQrNoticeError, setBoothQrNoticeError] = useState<string | null>(null);
+  const [boothQrSigningOut, setBoothQrSigningOut] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const composerHeadingId = useId();
   const [portalReady, setPortalReady] = useState(false);
@@ -109,6 +118,62 @@ function FeedPanelContent({
 
     void deepLinkSubmitToken(normalized, { source: "qr" });
   }, [canScan, deepLinkSubmitToken]);
+
+  useEffect(() => {
+    if (viewerRole !== "BOOTH_MANAGER") return;
+    if (typeof window === "undefined") return;
+
+    let deepLinkValue: string | null = null;
+    try {
+      const url = new URL(window.location.href);
+      deepLinkValue = url.searchParams.get("boothToken") ?? url.searchParams.get("token") ?? url.searchParams.get("t");
+    } catch {
+      deepLinkValue = null;
+    }
+
+    if (!deepLinkValue) return;
+    const normalized = deepLinkValue.trim();
+    if (!normalized) return;
+    if (boothQrTokenRef.current === normalized) return;
+    boothQrTokenRef.current = normalized;
+
+    setBoothQrNoticeError(null);
+    setBoothQrNoticeOpen(true);
+
+    try {
+      const url = new URL(window.location.href);
+      ["boothToken", "token", "t"].forEach((key) => url.searchParams.delete(key));
+      const search = url.searchParams.toString();
+      window.history.replaceState({}, "", `${url.pathname}${search ? `?${search}` : ""}${url.hash}`);
+    } catch {
+      // ignore URL parsing failures
+    }
+  }, [viewerRole]);
+
+  const handleBoothQrLogout = async () => {
+    if (boothQrSigningOut) return;
+    setBoothQrSigningOut(true);
+    setBoothQrNoticeError(null);
+
+    try {
+      const response = await fetch("/api/auth/code-login", { method: "DELETE" });
+      if (!response.ok) {
+        const json = await response.json().catch(() => ({}));
+        throw new Error(json.message ?? "세션을 종료하지 못했습니다.");
+      }
+      setSession(null);
+      setBoothQrNoticeOpen(false);
+      const nextPath = boothQrTokenRef.current
+        ? `/?next=${encodeURIComponent(`/feed?boothToken=${boothQrTokenRef.current}`)}`
+        : "/";
+      router.push(nextPath);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "세션을 종료하지 못했습니다.";
+      setBoothQrNoticeError(message);
+    } finally {
+      setBoothQrSigningOut(false);
+    }
+  };
 
   const getKey = (index: number, previous: FeedApiResponse | null) => {
     if (previous && !previous.feed.nextCursor) {
@@ -432,6 +497,19 @@ function FeedPanelContent({
               <span aria-hidden className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-tr from-[#003cbe] via-[#007eff] to-[#00c6ff]" />
               <QrIcon className="relative h-7 w-7 drop-shadow-[0_3px_8px_rgba(5,12,30,0.55)]" />
             </button>,
+            portalTarget,
+          )
+        : null}
+
+      {viewerRole === "BOOTH_MANAGER" && boothQrNoticeOpen && portalTarget
+        ? createPortal(
+            <BoothQrScanNoticeModal
+              message={"부스 계정으로 QR을 스캔했습니다.\n학생 계정으로 시도해 주세요."}
+              onClose={() => setBoothQrNoticeOpen(false)}
+              onLogout={handleBoothQrLogout}
+              loggingOut={boothQrSigningOut}
+              error={boothQrNoticeError}
+            />,
             portalTarget,
           )
         : null}
