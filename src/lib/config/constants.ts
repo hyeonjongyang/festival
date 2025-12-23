@@ -3,7 +3,7 @@ export const BOOTH_RECENT_VISIT_LIMIT = 25;
 export const FEED_PAGE_DEFAULT_SIZE = 8;
 export const FEED_PAGE_MAX_SIZE = 24;
 export const POST_BODY_MAX_LENGTH = 500;
-export const POST_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+export const POST_IMAGE_MAX_BYTES = 50 * 1024 * 1024;
 
 export const TRENDING_WINDOW_MINUTES = 10;
 export const TRENDING_MAX_ENTRIES = 3;

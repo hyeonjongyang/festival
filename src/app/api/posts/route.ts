@@ -10,6 +10,7 @@ import {
 import { fetchFeedPage } from "@/lib/posts/feed";
 
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const POST_IMAGE_MAX_MB = Math.round(POST_IMAGE_MAX_BYTES / (1024 * 1024));
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -106,7 +107,7 @@ export async function POST(request: Request) {
 
   if (file.size > POST_IMAGE_MAX_BYTES) {
     return NextResponse.json(
-      { message: "이미지는 5MB 이하로 업로드해주세요." },
+      { message: `이미지는 ${POST_IMAGE_MAX_MB}MB 이하로 업로드해주세요.` },
       { status: 400 },
     );
   }
