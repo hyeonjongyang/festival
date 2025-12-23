@@ -1,13 +1,15 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 import { POST_BODY_MAX_LENGTH, POST_IMAGE_MAX_BYTES } from "@/lib/config/constants";
+import { prepareUploadImage } from "@/lib/client/image-upload";
 
 type BoothPostComposerProps = {
   onPostCreated?: (postId: string | null) => void;
 };
 
 const MAX_IMAGE_SIZE_MB = Math.round(POST_IMAGE_MAX_BYTES / (1024 * 1024));
+const IMAGE_MAX_DIMENSION = 2200;
 
 export function BoothPostComposer({ onPostCreated }: BoothPostComposerProps) {
   const [body, setBody] = useState("");
@@ -15,11 +17,65 @@ export function BoothPostComposer({ onPostCreated }: BoothPostComposerProps) {
   const [fileInputResetKey, setFileInputResetKey] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [processingImage, setProcessingImage] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
+  const latestImageTaskId = useRef(0);
+
+  const isBusy = pending || processingImage;
+  const buttonLabel = useMemo(() => {
+    if (processingImage) return "이미지 준비 중…";
+    if (pending) return "업로드 중…";
+    return "피드 게시";
+  }, [pending, processingImage]);
+
+  const handleImageChange = async (next: File | null) => {
+    const taskId = (latestImageTaskId.current += 1);
+    setCreatedId(null);
+    setErrorMessage(null);
+
+    if (!next) {
+      setFile(null);
+      return;
+    }
+
+    setProcessingImage(true);
+    try {
+      const prepared = await prepareUploadImage(next, {
+        maxBytes: POST_IMAGE_MAX_BYTES,
+        maxDimension: IMAGE_MAX_DIMENSION,
+        outputMimeType: "image/jpeg",
+      });
+      if (latestImageTaskId.current === taskId) {
+        setFile(prepared);
+      }
+    } catch (error) {
+      if (latestImageTaskId.current === taskId) {
+        setFile(null);
+        const isHeic =
+          next.type === "image/heic" ||
+          next.type === "image/heif" ||
+          next.name.toLowerCase().endsWith(".heic") ||
+          next.name.toLowerCase().endsWith(".heif");
+        setErrorMessage(
+          isHeic
+            ? "HEIC 사진은 기기/브라우저에 따라 업로드 전 변환이 실패할 수 있어요. iPhone이라면 설정 > 카메라 > 포맷을 '높은 호환성'으로 바꾼 뒤 다시 찍어서 시도해주세요."
+            : error instanceof Error
+              ? error.message
+              : "이미지를 처리하지 못했습니다. 다른 사진으로 시도해주세요.",
+        );
+      }
+    } finally {
+      if (latestImageTaskId.current === taskId) {
+        setProcessingImage(false);
+      }
+    }
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmed = body.trim();
+
+    if (isBusy) return;
 
     if (trimmed.length === 0) {
       setErrorMessage("본문을 입력해주세요.");
@@ -37,7 +93,7 @@ export function BoothPostComposer({ onPostCreated }: BoothPostComposerProps) {
     }
 
     if (file.size > POST_IMAGE_MAX_BYTES) {
-      setErrorMessage(`이미지는 ${MAX_IMAGE_SIZE_MB}MB 이하로 업로드해주세요.`);
+      setErrorMessage(`이미지는 ${MAX_IMAGE_SIZE_MB}MB 이하로 업로드해주세요. (자동 최적화에 실패했어요)`);
       return;
     }
 
@@ -48,10 +104,14 @@ export function BoothPostComposer({ onPostCreated }: BoothPostComposerProps) {
     formData.append("body", trimmed);
     formData.append("image", file);
 
+    let timeout: number | null = null;
     try {
+      const controller = new AbortController();
+      timeout = window.setTimeout(() => controller.abort(), 90_000);
       const response = await fetch("/api/posts", {
         method: "POST",
         body: formData,
+        signal: controller.signal,
       });
 
       const json = await response.json().catch(() => ({}));
@@ -67,8 +127,13 @@ export function BoothPostComposer({ onPostCreated }: BoothPostComposerProps) {
       setCreatedId(json.postId ?? null);
       onPostCreated?.(json.postId ?? null);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "피드를 게시하지 못했습니다.");
+      if (error instanceof DOMException && error.name === "AbortError") {
+        setErrorMessage("업로드가 너무 오래 걸려서 중단했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
+      } else {
+        setErrorMessage(error instanceof Error ? error.message : "피드를 게시하지 못했습니다.");
+      }
     } finally {
+      if (timeout) window.clearTimeout(timeout);
       setPending(false);
     }
   };
@@ -96,20 +161,25 @@ export function BoothPostComposer({ onPostCreated }: BoothPostComposerProps) {
         <input
           key={fileInputResetKey}
           type="file"
-          accept="image/png,image/jpeg,image/webp"
+          accept="image/*"
           required
           aria-required="true"
-          onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+          onChange={(event) => void handleImageChange(event.target.files?.[0] ?? null)}
           className="mt-2 w-full rounded-2xl border border-dashed border-[var(--outline)] px-4 py-3 text-sm text-[var(--text-muted)]"
         />
+        {file ? (
+          <p className="mt-2 text-xs text-[var(--text-muted)]">
+            준비된 이미지: {Math.max(1, Math.round((file.size / 1024 / 1024) * 10) / 10)}MB
+          </p>
+        ) : null}
       </div>
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={isBusy}
         className="w-full rounded-2xl bg-[var(--accent)] px-4 py-3 text-center text-base font-semibold text-white transition-colors hover:bg-[var(--accent-strong)] disabled:opacity-60"
       >
-        {pending ? "업로드 중…" : "피드 게시"}
+        {buttonLabel}
       </button>
 
       {errorMessage ? (

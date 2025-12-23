@@ -9,7 +9,13 @@ import {
 } from "@/lib/config/constants";
 import { fetchFeedPage } from "@/lib/posts/feed";
 
-const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/jpg",
+  "image/pjpeg",
+  "image/png",
+  "image/webp",
+]);
 const POST_IMAGE_MAX_MB = Math.round(POST_IMAGE_MAX_BYTES / (1024 * 1024));
 
 export async function GET(request: Request) {
@@ -177,6 +183,8 @@ async function writePostImage(postId: string, buffer: Buffer, extension: string)
 function resolveImageExtension(mimeType: string, fileName?: string | null) {
   const map: Record<string, string> = {
     "image/jpeg": ".jpg",
+    "image/jpg": ".jpg",
+    "image/pjpeg": ".jpg",
     "image/png": ".png",
     "image/webp": ".webp",
   };
