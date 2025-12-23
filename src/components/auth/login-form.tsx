@@ -89,8 +89,16 @@ export function LoginForm() {
             {pending ? "확인 중…" : "로그인"}
           </button>
 
-          <p className="text-xs font-medium tracking-[0.08em] text-[var(--text-muted)]">
-            문의: 3층 정보2실 양현종
+          <p className="text-xs tracking-[0.08em] text-[var(--text-muted)]">
+            문의: 3층 정보2실 양현종 또는{" "}
+            <a
+              href="https://open.kakao.com/o/s9kn7Y7h"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="font-semibold underline underline-offset-4 decoration-[color-mix(in_srgb,var(--text-muted),transparent_55%)] transition-colors hover:text-[var(--text-primary)] hover:decoration-[color-mix(in_srgb,var(--text-primary),transparent_45%)]"
+            >
+              온라인 문의하기
+            </a>
           </p>
         </form>
       </div>
