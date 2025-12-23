@@ -33,6 +33,7 @@ export type PostFeedItem = {
   imageUrl: string | null;
   createdAt: string;
   authorId: string;
+  boothId: string | null;
   boothName: string;
   boothLocation: string | null;
   authorName: string;
@@ -103,6 +104,7 @@ export function mapFeedRecord(
     imageUrl: toPublicImageUrl(record.imagePath),
     createdAt: record.createdAt.toISOString(),
     authorId: record.author.id,
+    boothId,
     boothName: formatBoothName(record.booth?.name),
     boothLocation: record.booth?.location ?? null,
     authorName: getUserDisplayName(record.author),

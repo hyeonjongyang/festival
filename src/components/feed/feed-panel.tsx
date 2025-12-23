@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import useSWRInfinite from "swr/infinite";
 import type { UserRole } from "@prisma/client";
 import { jsonFetch } from "@/lib/client/http";
@@ -272,8 +273,24 @@ function FeedPanelContent({
                     <p className="text-xs uppercase tracking-[0.3em] text-[var(--text-muted)]">
                       {post.boothLocation ?? "위치 미정"}
                     </p>
-                    <h3 className="text-xl font-semibold text-[var(--text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>
-                      {post.boothName}
+                    <h3
+                      className="text-xl font-semibold text-[var(--text-primary)]"
+                      style={{ fontFamily: "var(--font-heading)" }}
+                    >
+                      {post.boothId ? (
+                        <Link
+                          href={`/booths/${post.boothId}`}
+                          aria-label={`부스 페이지로 이동: ${post.boothName}`}
+                          className={cn(
+                            "inline-block transition-colors",
+                            "hover:text-[var(--accent)] focus-visible:text-[var(--accent)]",
+                          )}
+                        >
+                          {post.boothName}
+                        </Link>
+                      ) : (
+                        post.boothName
+                      )}
                     </h3>
                     <p className="text-xs text-[var(--text-muted)]">
                       {formatRelativeTime(post.createdAt)}
