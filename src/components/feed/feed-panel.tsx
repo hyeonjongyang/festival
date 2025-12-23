@@ -266,7 +266,7 @@ function FeedPanelContent({
         {posts.length > 0 ? (
           <div className="divide-y divide-[var(--outline)] overflow-hidden rounded-[28px] border border-[var(--outline)] bg-[var(--surface-muted)]">
             {posts.map((post) => (
-              <article key={post.id} className="p-5 sm:p-6">
+              <article key={post.id} className="relative p-5 sm:p-6">
                 <header className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-xs uppercase tracking-[0.3em] text-[var(--text-muted)]">
@@ -287,15 +287,13 @@ function FeedPanelContent({
                       </span>
                     ) : null}
                   </div>
-                  {(isAdmin || post.authorId === viewerId) && (
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(post.id)}
-                      className="rounded-full border border-[var(--outline)] px-3 py-1 text-xs text-[var(--text-muted)]"
-                    >
-                      삭제
-                    </button>
-                  )}
+                  {isAdmin || post.authorId === viewerId ? (
+                    <PostOverflowMenu
+                      onDelete={() => {
+                        void handleDelete(post.id);
+                      }}
+                    />
+                  ) : null}
                 </header>
 
                 <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-[var(--text-primary)]">{post.body}</p>
@@ -455,6 +453,169 @@ function QrIcon(props: SVGProps<SVGSVGElement>) {
       <g fill="currentColor" fillOpacity={0.85}>
         <path d="M0.78125 6.23047C1.29883 6.23047 1.57227 5.9375 1.57227 5.42969L1.57227 3.125C1.57227 2.10938 2.10938 1.5918 3.08594 1.5918L5.44922 1.5918C5.9668 1.5918 6.25 1.30859 6.25 0.800781C6.25 0.292969 5.9668 0.0195312 5.44922 0.0195312L3.06641 0.0195312C1.02539 0.0195312 0 1.02539 0 3.03711L0 5.42969C0 5.9375 0.283203 6.23047 0.78125 6.23047ZM18.3301 6.23047C18.8477 6.23047 19.1211 5.9375 19.1211 5.42969L19.1211 3.03711C19.1211 1.02539 18.0957 0.0195312 16.0547 0.0195312L13.6621 0.0195312C13.1543 0.0195312 12.8711 0.292969 12.8711 0.800781C12.8711 1.30859 13.1543 1.5918 13.6621 1.5918L16.0254 1.5918C16.9922 1.5918 17.5488 2.10938 17.5488 3.125L17.5488 5.42969C17.5488 5.9375 17.832 6.23047 18.3301 6.23047ZM3.06641 19.1309L5.44922 19.1309C5.9668 19.1309 6.25 18.8477 6.25 18.3496C6.25 17.8418 5.9668 17.5586 5.44922 17.5586L3.08594 17.5586C2.10938 17.5586 1.57227 17.041 1.57227 16.0254L1.57227 13.7207C1.57227 13.2031 1.28906 12.9199 0.78125 12.9199C0.273438 12.9199 0 13.2031 0 13.7207L0 16.1035C0 18.125 1.02539 19.1309 3.06641 19.1309ZM13.6621 19.1309L16.0547 19.1309C18.0957 19.1309 19.1211 18.1152 19.1211 16.1035L19.1211 13.7207C19.1211 13.2031 18.8379 12.9199 18.3301 12.9199C17.8223 12.9199 17.5488 13.2031 17.5488 13.7207L17.5488 16.0254C17.5488 17.041 16.9922 17.5586 16.0254 17.5586L13.6621 17.5586C13.1543 17.5586 12.8711 17.8418 12.8711 18.3496C12.8711 18.8477 13.1543 19.1309 13.6621 19.1309Z" />
         <path d="M5.30273 14.2383L8.70117 14.2383C8.94531 14.2383 9.13086 14.0527 9.13086 13.8086L9.13086 10.4102C9.13086 10.1758 8.94531 9.98047 8.70117 9.98047L5.30273 9.98047C5.05859 9.98047 4.87305 10.1758 4.87305 10.4102L4.87305 13.8086C4.87305 14.0527 5.05859 14.2383 5.30273 14.2383ZM5.72266 13.3887L5.72266 10.8301L8.28125 10.8301L8.28125 13.3887ZM6.46484 12.6465L7.53906 12.6465L7.53906 11.5723L6.46484 11.5723ZM5.30273 9.14062L8.70117 9.14062C8.94531 9.14062 9.13086 8.95508 9.13086 8.71094L9.13086 5.3125C9.13086 5.06836 8.94531 4.88281 8.70117 4.88281L5.30273 4.88281C5.05859 4.88281 4.87305 5.06836 4.87305 5.3125L4.87305 8.71094C4.87305 8.95508 5.05859 9.14062 5.30273 9.14062ZM5.72266 8.29102L5.72266 5.72266L8.28125 5.72266L8.28125 8.29102ZM6.46484 7.53906L7.53906 7.53906L7.53906 6.47461L6.46484 6.47461ZM10.4004 9.14062L13.7988 9.14062C14.043 9.14062 14.2285 8.95508 14.2285 8.71094L14.2285 5.3125C14.2285 5.06836 14.043 4.88281 13.7988 4.88281L10.4004 4.88281C10.1562 4.88281 9.9707 5.06836 9.9707 5.3125L9.9707 8.71094C9.9707 8.95508 10.1562 9.14062 10.4004 9.14062ZM10.8203 8.29102L10.8203 5.72266L13.3789 5.72266L13.3789 8.29102ZM11.5723 7.53906L12.6367 7.53906L12.6367 6.47461L11.5723 6.47461ZM10.0977 14.1113L11.1621 14.1113L11.1621 13.0469L10.0977 13.0469ZM13.0371 14.1113L14.1016 14.1113L14.1016 13.0469L13.0371 13.0469ZM11.5625 12.6465L12.6367 12.6465L12.6367 11.5723L11.5625 11.5723ZM10.0977 11.1719L11.1621 11.1719L11.1621 10.1074L10.0977 10.1074ZM13.0371 11.1719L14.1016 11.1719L14.1016 10.1074L13.0371 10.1074Z" />
+      </g>
+    </svg>
+  );
+}
+
+type PostOverflowMenuProps = {
+  onDelete: () => void;
+};
+
+function PostOverflowMenu({ onDelete }: PostOverflowMenuProps) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const deleteRef = useRef<HTMLButtonElement | null>(null);
+  const openModeRef = useRef<"pointer" | "keyboard" | null>(null);
+  const [panelPosition, setPanelPosition] = useState<{ left: number; top: number } | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const updatePosition = () => {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+
+      const rect = trigger.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const width = 168;
+      const padding = 10;
+      const gap = 8;
+      const measuredHeight = panelRef.current?.getBoundingClientRect().height;
+      const height = measuredHeight && measuredHeight > 0 ? measuredHeight : 54;
+
+      let left = rect.right - width;
+      left = Math.max(padding, Math.min(left, viewportWidth - width - padding));
+
+      let top = rect.bottom + gap;
+      if (top + height > viewportHeight - padding) {
+        top = rect.top - gap - height;
+      }
+      top = Math.max(padding, Math.min(top, viewportHeight - height - padding));
+
+      setPanelPosition({ left, top });
+    };
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      const trigger = triggerRef.current;
+      const panel = panelRef.current;
+      if (!(target instanceof Node)) return;
+      if (trigger?.contains(target)) return;
+      if (panel?.contains(target)) return;
+      setOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    updatePosition();
+    const shouldFocus = openModeRef.current === "keyboard";
+    const focusFrame = shouldFocus ? window.requestAnimationFrame(() => deleteRef.current?.focus()) : 0;
+
+    return () => {
+      if (shouldFocus) {
+        window.cancelAnimationFrame(focusFrame);
+      }
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open]);
+
+  const portalTarget = typeof document !== "undefined" ? document.body : null;
+
+  return (
+    <div ref={rootRef} className="relative flex items-center justify-end">
+      <button
+        ref={triggerRef}
+        type="button"
+        onPointerDown={() => {
+          openModeRef.current = "pointer";
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " " || event.key === "ArrowDown") {
+            openModeRef.current = "keyboard";
+          }
+        }}
+        onClick={() => setOpen((current) => !current)}
+        className={cn(
+          "group inline-flex h-7 w-7 items-center justify-center rounded-full border border-[var(--outline)] bg-[var(--surface)]/35 text-[var(--text-muted)] shadow-[0_12px_40px_rgba(0,0,0,0.18)] backdrop-blur transition",
+          "hover:border-[var(--outline-strong)] hover:text-[var(--text-primary)]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--outline-strong)]/55 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]",
+        )}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="게시글 더보기"
+      >
+        <MoreIcon className="h-3 w-5 opacity-90 transition group-hover:opacity-100" />
+      </button>
+
+      {open && portalTarget && panelPosition
+        ? createPortal(
+            <div
+              ref={panelRef}
+              role="menu"
+              aria-label="게시글 작업"
+              data-reveal="skip"
+              style={{ left: panelPosition.left, top: panelPosition.top }}
+              className="fixed z-[9999] w-[168px] overflow-hidden rounded-[22px] border border-[var(--outline)] bg-[var(--surface)]/96 p-1 shadow-[var(--shadow-pop)] backdrop-blur"
+            >
+              <button
+                ref={deleteRef}
+                type="button"
+                role="menuitem"
+                data-reveal="skip"
+                onClick={() => {
+                  setOpen(false);
+                  onDelete();
+                }}
+                className={cn(
+                  "flex w-full items-center justify-between gap-2 rounded-[18px] px-3 py-2 text-sm font-medium text-[var(--danger)] transition",
+                  "hover:bg-[var(--danger)]/12 hover:text-[var(--danger)] focus-visible:bg-[var(--danger)]/12 focus-visible:outline-none",
+                )}
+              >
+                삭제
+              </button>
+            </div>,
+            portalTarget,
+          )
+        : null}
+    </div>
+  );
+}
+
+function MoreIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 18.584 3.7207" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <g>
+        <rect height="3.7207" opacity="0" width="18.584" x="0" y="0" />
+        <path
+          d="M16.3672 3.70117C17.3926 3.70117 18.2227 2.88086 18.2227 1.85547C18.2227 0.830078 17.3926 0 16.3672 0C15.3418 0 14.5117 0.830078 14.5117 1.85547C14.5117 2.88086 15.3418 3.70117 16.3672 3.70117Z"
+          fill="currentColor"
+          fillOpacity={0.85}
+        />
+        <path
+          d="M9.11133 3.70117C10.1367 3.70117 10.957 2.88086 10.957 1.85547C10.957 0.830078 10.1367 0 9.11133 0C8.08594 0 7.25586 0.830078 7.25586 1.85547C7.25586 2.88086 8.08594 3.70117 9.11133 3.70117Z"
+          fill="currentColor"
+          fillOpacity={0.85}
+        />
+        <path
+          d="M1.85547 3.70117C2.88086 3.70117 3.70117 2.88086 3.70117 1.85547C3.70117 0.830078 2.88086 0 1.85547 0C0.830078 0 0 0.830078 0 1.85547C0 2.88086 0.830078 3.70117 1.85547 3.70117Z"
+          fill="currentColor"
+          fillOpacity={0.85}
+        />
       </g>
     </svg>
   );
