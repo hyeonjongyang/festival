@@ -49,12 +49,21 @@ export type BoothLeaderboardResult = {
 
 export function sortBoothLeaderboardRecords(
   records: BoothLeaderboardRecord[],
+  ratingStats?: Map<string, BoothRatingAggregate>,
 ) {
   return [...records].sort((a, b) => {
     const visitDelta = (b._count?.visits ?? 0) - (a._count?.visits ?? 0);
 
     if (visitDelta !== 0) {
       return visitDelta;
+    }
+
+    const aRating = ratingStats?.get(a.id)?.average ?? -1;
+    const bRating = ratingStats?.get(b.id)?.average ?? -1;
+    const ratingDelta = bRating - aRating;
+
+    if (ratingDelta !== 0) {
+      return ratingDelta;
     }
 
     return collator.compare(a.name, b.name);
@@ -65,7 +74,7 @@ export function rankBoothLeaderboardRecords(
   records: BoothLeaderboardRecord[],
   ratingStats?: Map<string, BoothRatingAggregate>,
 ): BoothLeaderboardEntry[] {
-  const sorted = sortBoothLeaderboardRecords(records);
+  const sorted = sortBoothLeaderboardRecords(records, ratingStats);
 
   let currentRank = 0;
   let previousVisitCount: number | null = null;

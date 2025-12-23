@@ -59,6 +59,25 @@ describe("rankBoothLeaderboardRecords", () => {
     expect(ranked[2]?.location).toBeNull();
   });
 
+  it("breaks ties by average rating when visit counts match", () => {
+    const records = [
+      makeBoothRecord({ id: "low", name: "낮은별점", visitCount: 10 }),
+      makeBoothRecord({ id: "high", name: "높은별점", visitCount: 10 }),
+      makeBoothRecord({ id: "none", name: "평점없음", visitCount: 10 }),
+    ];
+
+    const ranked = rankBoothLeaderboardRecords(
+      records,
+      new Map([
+        ["low", { average: 3.5, count: 2 }],
+        ["high", { average: 4.8, count: 15 }],
+      ]),
+    );
+
+    expect(ranked.map((entry) => entry.id)).toEqual(["high", "low", "none"]);
+    expect(ranked.map((entry) => entry.rank)).toEqual([1, 1, 1]);
+  });
+
   it("adds rating aggregates when available", () => {
     const records = [
       makeBoothRecord({ id: "game", name: "게임존", visitCount: 10 }),
