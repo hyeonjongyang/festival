@@ -137,7 +137,7 @@ export function BoothDashboard({ initial, origin }: BoothDashboardProps) {
 
       <div className="p-5">
         <div className="flex items-center justify-between">
-          <p className="font-semibold">최근 방문 로그</p>
+          <p className="font-semibold">최근 방문 기록</p>
           <span className="text-xs text-[var(--text-muted)]">{dashboard.recentLogs.length}건</span>
         </div>
         {dashboard.recentLogs.length === 0 ? (

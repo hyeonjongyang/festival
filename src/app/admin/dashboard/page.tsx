@@ -43,11 +43,11 @@ export default async function AdminDashboardPage() {
 
       <section className="p-5">
         <header className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">최근 방문 로그</h2>
+          <h2 className="text-xl font-semibold">최근 방문 기록</h2>
           <span className="text-xs text-[var(--text-muted)]">{dashboard.recentVisitLogs.length}건</span>
         </header>
         {dashboard.recentVisitLogs.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--text-muted)]">최근 방문 로그가 없습니다.</p>
+          <p className="mt-3 text-sm text-[var(--text-muted)]">최근 방문 기록이 없습니다.</p>
         ) : (
           <ul className="mt-3 space-y-2 text-sm">
             {dashboard.recentVisitLogs.map((log) => (
