@@ -59,6 +59,10 @@ describe("deletePost", () => {
       where: { id: "post_1" },
     });
     expect(rmMock).toHaveBeenCalledWith(
+      path.join(process.cwd(), "uploads/posts/post_1"),
+      { recursive: true, force: true },
+    );
+    expect(rmMock).toHaveBeenCalledWith(
       path.join(process.cwd(), "public", "uploads/posts/post_1"),
       { recursive: true, force: true },
     );

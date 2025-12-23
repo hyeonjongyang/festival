@@ -46,14 +46,13 @@ async function removePostAssets(imagePath: string | null | undefined) {
   const normalized = imagePath.startsWith("/")
     ? imagePath.slice(1)
     : imagePath;
-  const absoluteDir = path.join(
-    process.cwd(),
-    "public",
-    path.dirname(normalized),
-  );
+  const relativeDir = path.dirname(normalized.replace(/^api\/uploads\//, "uploads/"));
+  const absoluteDir = path.join(process.cwd(), relativeDir);
+  const legacyPublicDir = path.join(process.cwd(), "public", relativeDir);
 
   try {
     await rm(absoluteDir, { recursive: true, force: true });
+    await rm(legacyPublicDir, { recursive: true, force: true });
   } catch (error) {
     console.error("게시글 이미지 정리에 실패했습니다.", error);
   }

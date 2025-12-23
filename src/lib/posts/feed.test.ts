@@ -31,7 +31,7 @@ describe("mapFeedRecord", () => {
     expect(item).toEqual({
       id: "post_1",
       body: "축제 사진 자랑",
-      imageUrl: "/uploads/posts/post_1/image.jpg",
+      imageUrl: "/api/uploads/posts/post_1/image.jpg",
       createdAt: createdAt.toISOString(),
       authorId: "user_1",
       boothName: "은하 카페",
@@ -84,10 +84,10 @@ describe("toPublicImageUrl", () => {
 
   it("ensures the path begins with a slash", () => {
     expect(toPublicImageUrl("/uploads/posts/post_3/image.png")).toBe(
-      "/uploads/posts/post_3/image.png",
+      "/api/uploads/posts/post_3/image.png",
     );
     expect(toPublicImageUrl("uploads/posts/post_3/image.png")).toBe(
-      "/uploads/posts/post_3/image.png",
+      "/api/uploads/posts/post_3/image.png",
     );
   });
 });

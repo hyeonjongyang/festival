@@ -116,7 +116,17 @@ export function toPublicImageUrl(pathValue: string | null | undefined) {
     return null;
   }
 
-  return pathValue.startsWith("/") ? pathValue : `/${pathValue}`;
+  const normalized = pathValue.startsWith("/") ? pathValue : `/${pathValue}`;
+
+  if (normalized.startsWith("/api/uploads/")) {
+    return normalized;
+  }
+
+  if (normalized.startsWith("/uploads/")) {
+    return `/api/uploads/${normalized.slice("/uploads/".length)}`;
+  }
+
+  return normalized;
 }
 
 function clampPageSize(limit?: number | null) {

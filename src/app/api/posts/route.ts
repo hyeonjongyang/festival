@@ -176,7 +176,7 @@ export async function POST(request: Request) {
 
 async function writePostImage(postId: string, buffer: Buffer, extension: string) {
   const relativeFsPath = path.join("uploads", "posts", postId, `image${extension}`);
-  const absolutePath = path.join(process.cwd(), "public", relativeFsPath);
+  const absolutePath = path.join(process.cwd(), relativeFsPath);
 
   await fs.mkdir(path.dirname(absolutePath), { recursive: true });
   await fs.writeFile(absolutePath, buffer);
@@ -187,7 +187,7 @@ async function writePostImage(postId: string, buffer: Buffer, extension: string)
 
 async function deletePostImageIfExists(postId: string, extension: string) {
   const relativeFsPath = path.join("uploads", "posts", postId, `image${extension}`);
-  const absolutePath = path.join(process.cwd(), "public", relativeFsPath);
+  const absolutePath = path.join(process.cwd(), relativeFsPath);
 
   await fs.rm(absolutePath, { force: true });
   await fs.rm(path.dirname(absolutePath), { force: true, recursive: true });
