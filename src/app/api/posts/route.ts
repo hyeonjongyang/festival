@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth/get-session-user";
 import { prisma } from "@/lib/prisma";
@@ -8,6 +9,9 @@ import {
   POST_IMAGE_MAX_BYTES,
 } from "@/lib/config/constants";
 import { fetchFeedPage } from "@/lib/posts/feed";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const ALLOWED_IMAGE_TYPES = new Set([
   "image/jpeg",
@@ -31,7 +35,9 @@ export async function GET(request: Request) {
       limit,
     });
 
-    return NextResponse.json({ feed });
+    const response = NextResponse.json({ feed });
+    response.headers.set("Cache-Control", "no-store");
+    return response;
   } catch (error) {
     console.error("피드를 불러오지 못했습니다.", error);
     return NextResponse.json(
@@ -125,31 +131,30 @@ export async function POST(request: Request) {
     );
   }
 
-  const created = await prisma.post.create({
-    data: {
-      body: trimmedBody,
-      authorId: session.id,
-      boothId: booth.id,
-    },
-    select: {
-      id: true,
-    },
-  });
-
   const buffer = Buffer.from(await file.arrayBuffer());
   const extension = resolveImageExtension(file.type, file.name);
+  const postId = crypto.randomUUID();
 
   try {
-    const relativePath = await writePostImage(created.id, buffer, extension);
-
-    await prisma.post.update({
-      where: { id: created.id },
+    const relativePath = await writePostImage(postId, buffer, extension);
+    await prisma.post.create({
       data: {
+        id: postId,
+        body: trimmedBody,
+        authorId: session.id,
+        boothId: booth.id,
         imagePath: relativePath,
+      },
+      select: {
+        id: true,
       },
     });
   } catch (error) {
-    await prisma.post.delete({ where: { id: created.id } });
+    try {
+      await deletePostImageIfExists(postId, extension);
+    } catch (cleanupError) {
+      console.error("이미지 업로드 실패 후 정리 중 오류", cleanupError);
+    }
     console.error("이미지 업로드 실패", error);
 
     return NextResponse.json(
@@ -163,7 +168,7 @@ export async function POST(request: Request) {
   return NextResponse.json(
     {
       message: "피드가 등록되었습니다.",
-      postId: created.id,
+      postId,
     },
     { status: 201 },
   );
@@ -178,6 +183,14 @@ async function writePostImage(postId: string, buffer: Buffer, extension: string)
 
   const normalizedRelativePath = relativeFsPath.split(path.sep).join("/");
   return `/${normalizedRelativePath}`;
+}
+
+async function deletePostImageIfExists(postId: string, extension: string) {
+  const relativeFsPath = path.join("uploads", "posts", postId, `image${extension}`);
+  const absolutePath = path.join(process.cwd(), "public", relativeFsPath);
+
+  await fs.rm(absolutePath, { force: true });
+  await fs.rm(path.dirname(absolutePath), { force: true, recursive: true });
 }
 
 function resolveImageExtension(mimeType: string, fileName?: string | null) {
