@@ -3,9 +3,11 @@
 import { FormEvent, useEffect, useId, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { mutate as mutateGlobal } from "swr";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/client/cn";
 import { HttpError, jsonFetch } from "@/lib/client/http";
 import { useBoothProfile } from "@/hooks/use-booth-profile";
+import { useSession } from "@/components/session-context";
 
 type FieldErrors = Record<string, string[]>;
 
@@ -18,6 +20,8 @@ const DEFAULT_FORM = {
 export function BoothProfileButton() {
   const [open, setOpen] = useState(false);
   const [portalReady, setPortalReady] = useState(false);
+  const router = useRouter();
+  const { setSession } = useSession();
   const headingId = useId();
   const nameId = useId();
   const locationId = useId();
@@ -26,6 +30,7 @@ export function BoothProfileButton() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [status, setStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     setPortalReady(true);
@@ -85,6 +90,8 @@ export function BoothProfileButton() {
   }, [error]);
 
   const formLocked = saving || isValidating || !booth;
+  const saveLocked = formLocked || signingOut;
+  const signOutLocked = saving || signingOut;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -117,6 +124,26 @@ export function BoothProfileButton() {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    setStatus(null);
+    try {
+      const response = await fetch("/api/auth/code-login", { method: "DELETE" });
+      if (!response.ok) {
+        const json = await response.json().catch(() => ({}));
+        throw new Error(json.message ?? "세션을 종료하지 못했습니다.");
+      }
+      setSession(null);
+      setOpen(false);
+      router.push("/");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "세션을 종료하지 못했습니다.";
+      setStatus(message);
+    } finally {
+      setSigningOut(false);
     }
   };
 
@@ -177,7 +204,7 @@ export function BoothProfileButton() {
                           onChange={(value) => setForm((prev) => ({ ...prev, name: value }))}
                           placeholder="예: 지구과학 동아리"
                           error={fieldErrors.name?.[0]}
-                          disabled={formLocked}
+                          disabled={saveLocked}
                           required
                         />
                         <div className="grid gap-4 sm:grid-cols-2">
@@ -188,7 +215,7 @@ export function BoothProfileButton() {
                             onChange={(value) => setForm((prev) => ({ ...prev, location: value }))}
                             placeholder="예: 본관 1층 복도"
                             error={fieldErrors.location?.[0]}
-                            disabled={formLocked}
+                            disabled={saveLocked}
                           />
                           <Field
                             id={descriptionId}
@@ -197,7 +224,7 @@ export function BoothProfileButton() {
                             onChange={(value) => setForm((prev) => ({ ...prev, description: value }))}
                             placeholder="활동, 체험, 한 줄 설명 등"
                             error={fieldErrors.description?.[0]}
-                            disabled={formLocked}
+                            disabled={saveLocked}
                             multiline
                             rows={3}
                           />
@@ -225,16 +252,27 @@ export function BoothProfileButton() {
                       ) : null}
 
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <button
-                          type="button"
-                          onClick={() => setOpen(false)}
-                          className="inline-flex items-center justify-center rounded-full border border-[var(--outline)] px-4 py-3 text-sm font-semibold text-[var(--text-muted)] transition hover:border-[var(--outline-strong)] hover:text-[var(--text-primary)]"
-                        >
-                          닫기
-                        </button>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                          <button
+                            type="button"
+                            onClick={() => setOpen(false)}
+                            disabled={signingOut}
+                            className="inline-flex items-center justify-center rounded-full border border-[var(--outline)] px-4 py-3 text-sm font-semibold text-[var(--text-muted)] transition hover:border-[var(--outline-strong)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            닫기
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSignOut}
+                            disabled={signOutLocked}
+                            className="inline-flex items-center justify-center rounded-full border border-[var(--outline)] bg-[var(--bg-secondary)] px-4 py-3 text-sm font-semibold text-[var(--danger)] transition hover:bg-[var(--surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {signingOut ? "로그아웃 중…" : "로그아웃"}
+                          </button>
+                        </div>
                         <button
                           type="submit"
-                          disabled={saving || isValidating || !booth}
+                          disabled={saveLocked}
                           className="inline-flex min-w-[160px] items-center justify-center rounded-full bg-gradient-to-r from-[#0052cc] via-[#007eff] to-[#00c2ff] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(0,90,200,0.45)] transition hover:shadow-[0_24px_50px_rgba(0,110,240,0.55)] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {saving ? "저장 중…" : "변경사항 저장"}
